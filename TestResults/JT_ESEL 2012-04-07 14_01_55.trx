@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<TestRun id="661c9473-14d9-4160-8aad-1bc7019b0516" name="JT@ESEL 2012-04-07 14:01:55" runUser="ESEL\JT" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <TestSettings name="Local" id="916057f4-91c0-43c6-9199-cb7faaee8a8c">
+    <Description>These are default test settings for a local test run.</Description>
+    <Deployment enabled="false" runDeploymentRoot="JT_ESEL 2012-04-07 14_01_55">
+      <DeploymentItem filename="c:\source\fiddle\blast\Blast\Blast\bin\Debug\Blast.dll" />
+    </Deployment>
+    <Execution>
+      <TestTypeSpecific />
+      <AgentRule name="Execution Agents">
+      </AgentRule>
+    </Execution>
+  </TestSettings>
+  <Times creation="2012-04-07T14:01:55.3313929+10:00" queuing="2012-04-07T14:01:57.6089969+10:00" start="2012-04-07T14:01:57.8741973+10:00" finish="2012-04-07T14:01:58.5917986+10:00" />
+  <ResultSummary outcome="Failed">
+    <Counters total="1" executed="1" error="0" failed="1" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" passed="0" completed="0" inProgress="0" pending="0" />
+  </ResultSummary>
+  <TestDefinitions>
+    <UnitTest name="TestMethod1" storage="c:\source\fiddle\blast\blast\blasttest\bin\debug\blasttest.dll" id="5ff077dc-6a89-b06b-c597-43fe8e411303">
+      <Execution id="ff6f55f0-14a4-453a-96c9-420b10d2c3e6" />
+      <TestMethod codeBase="c:/source/fiddle/blast/Blast/BlastTest/bin/Debug/BlastTest.DLL" adapterTypeName="Microsoft.VisualStudio.TestTools.TestTypes.Unit.UnitTestAdapter, Microsoft.VisualStudio.QualityTools.Tips.UnitTest.Adapter, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" className="BlastTest.BlastTest, BlastTest, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" name="TestMethod1" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <TestEntries>
+    <TestEntry testId="5ff077dc-6a89-b06b-c597-43fe8e411303" executionId="ff6f55f0-14a4-453a-96c9-420b10d2c3e6" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <Results>
+    <UnitTestResult executionId="ff6f55f0-14a4-453a-96c9-420b10d2c3e6" testId="5ff077dc-6a89-b06b-c597-43fe8e411303" testName="TestMethod1" computerName="ESEL" duration="00:00:00.1469185" startTime="2012-04-07T14:01:57.9521975+10:00" endTime="2012-04-07T14:01:58.5293985+10:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ff6f55f0-14a4-453a-96c9-420b10d2c3e6">
+      <Output>
+        <ErrorInfo>
+          <Message>Test method BlastTest.BlastTest.TestMethod1 threw exception: 
+System.NullReferenceException: Object reference not set to an instance of an object.</Message>
+          <StackTrace>    at Utils.Blast.bits(state s, Int32 need) in c:\source\fiddle\blast\Blast\Blast\Blast.cs:line 50
+   at Utils.Blast.decomp(state s) in c:\source\fiddle\blast\Blast\Blast\Blast.cs:line 141
+   at Utils.Blast.blast(Stream inputStream, Stream outputStream) in c:\source\fiddle\blast\Blast\Blast\Blast.cs:line 226
+   at BlastTest.BlastTest.TestMethod1() in c:\source\fiddle\blast\Blast\BlastTest\UnitTest1.cs:line 22
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+  </Results>
+</TestRun>
