@@ -21,25 +21,6 @@ namespace Utils {
         public const int MAXBITS = 13;
         public const int MAXWIN = 4096;
 
-        // bit lengths of literal codes 
-        private static readonly byte[] LITERAL_BIT_LENGTHS = { 
-            11, 124, 8, 7, 28, 7, 188, 13, 76, 4, 10, 8, 12, 10, 12, 10, 8, 23, 8,
-            9, 7, 6, 7, 8, 7, 6, 55, 8, 23, 24, 12, 11, 7, 9, 11, 12, 6, 7, 22, 5,
-            7, 24, 6, 11, 9, 6, 7, 22, 7, 11, 38, 7, 9, 8, 25, 11, 8, 11, 9, 12,
-            8, 12, 5, 38, 5, 38, 5, 11, 7, 5, 6, 21, 6, 10, 53, 8, 7, 24, 10, 27,
-            44, 253, 253, 253, 252, 252, 252, 13, 12, 45, 12, 45, 12, 61, 12, 45,
-            44, 173};
-
-        /// <summary>
-        /// bit lengths of length codes 0..15
-        /// </summary> 
-        private static readonly byte[] LENGTH_BIT_LENGTHS = { 2, 35, 36, 53, 38, 23 };
-
-        /// <summary>
-        ///  bit lengths of distance codes 0..63
-        /// </summary>
-        private static readonly byte[] DISTANCE_BIT_LENGTHS = { 2, 20, 53, 230, 247, 151, 248 };
-
         /// <summary>
         /// base for length codes
         /// </summary>
@@ -49,10 +30,6 @@ namespace Utils {
         /// extra bits for length codes
         /// </summary>
         private static readonly byte[] LENGTH_CODE_EXTRA = { 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8 };
-
-        private static readonly HuffmanTable LITERAL_CODE = new HuffmanTable(256, LITERAL_BIT_LENGTHS);
-        private static readonly HuffmanTable LENGTH_CODE = new HuffmanTable(16, LENGTH_BIT_LENGTHS);
-        private static readonly HuffmanTable DISTANCE_CODE = new HuffmanTable(64, DISTANCE_BIT_LENGTHS);
 
         private BlastState state;
 
@@ -163,8 +140,9 @@ namespace Utils {
             // decode literals and length/distance pairs 
             do {
                 if (bits(1) > 0) { // 0 == literal, 1 == length+distance
+
                     // get length 
-                    symbol = decode(LENGTH_CODE);
+                    symbol = Decode(HuffmanTable.LENGTH_CODE);
                     copyLength = LENGTH_CODE_BASE[symbol] + bits(LENGTH_CODE_EXTRA[symbol]);
 
                     if (copyLength == 519) { // end code
@@ -173,7 +151,7 @@ namespace Utils {
 
                     // get distance 
                     symbol = copyLength == 2 ? 2 : dictSize;
-                    copyDist = decode(DISTANCE_CODE) << symbol;
+                    copyDist = Decode(HuffmanTable.DISTANCE_CODE) << symbol;
                     copyDist += bits(symbol);
                     copyDist++;
 
@@ -185,22 +163,23 @@ namespace Utils {
                     do {
                         toIndex = state.next;
                         fromIndex = toIndex - copyDist;
-                        copyCount = MAXWIN;
+                        copyCount = copyDist;
 
-                        if (state.next < copyDist) {
+                        if (fromIndex < 0) {
                             fromIndex += copyCount;
-                            copyCount = copyDist;
+                            //copyCount = copyDist;
                         }
-                        copyCount -= state.next;
+                        //copyCount -= state.next;
 
                         if (copyCount > copyLength) {
                             copyCount = copyLength;
                         }
 
+                        Buffer.BlockCopy(state.outputBuffer, fromIndex, state.outputBuffer, toIndex, copyCount);
+
                         copyLength -= copyCount;
                         state.next += copyCount;
 
-                        Buffer.BlockCopy(state.outputBuffer, fromIndex, state.outputBuffer, toIndex, copyCount);
 
                         if (state.next == MAXWIN) {
                             state.outputStream.Write(state.outputBuffer, 0, state.next);
@@ -211,7 +190,7 @@ namespace Utils {
                     } while (copyLength != 0);
                 } else {
                     // get literal and write it 
-                    symbol = codedLiteral != 0 ? decode(LITERAL_CODE) : bits(8);
+                    symbol = codedLiteral != 0 ? Decode(HuffmanTable.LITERAL_CODE) : bits(8);
                     state.outputBuffer[state.next++] = (byte)symbol;
                     if (state.next == MAXWIN) {
                         state.outputStream.Write(state.outputBuffer, 0, state.next);
@@ -249,7 +228,7 @@ namespace Utils {
          *   this ordering, the bits pulled during decoding are inverted to apply the
          *   more "natural" ordering starting with all zeros and incrementing.
          */
-        private int decode(HuffmanTable h) {
+        private int Decode(HuffmanTable h) {
             int len = 1;            // current number of bits in code 
             int code = 0;           // len bits being decoded 
             int first = 0;          // first code of length len 
@@ -291,7 +270,7 @@ namespace Utils {
                     }
                 }
                 
-                bitbuf = state.consume();
+                bitbuf = state.ConsumeByte();
                 if (left > 8)
                     left = 8;
             }
@@ -308,7 +287,7 @@ namespace Utils {
                     if (state.left == 0)
                         throw new BlastException(BlastException.OutOfInputMessage);
                 }
-                val |= ((int)state.consume()) << state.bitcnt;
+                val |= ((int)state.ConsumeByte()) << state.bitcnt;
                 state.bitcnt += 8;
             }
             state.bitbuf = val >> need;
@@ -322,7 +301,8 @@ namespace Utils {
             public byte[] inputBuffer = new byte[16384];
             public int inputBufferPos;
             public int left;
-            public byte consume() {
+
+            public byte ConsumeByte() {
                 byte b = inputBuffer[inputBufferPos++];
                 left--;
                 return b;
@@ -336,7 +316,6 @@ namespace Utils {
             public int next;
             public int first;
             public byte[] outputBuffer = new byte[MAXWIN];
-            public int outputBufferPos;
             public void writeBuffer(byte b) {
                 inputBuffer[inputBufferPos++] = b;
             }
@@ -350,6 +329,30 @@ namespace Utils {
          * seen in the function decode() below.
          */
         public class HuffmanTable {
+
+            // bit lengths of literal codes 
+            private static readonly byte[] LITERAL_BIT_LENGTHS = { 
+                11, 124, 8, 7, 28, 7, 188, 13, 76, 4, 10, 8, 12, 10, 12, 10, 8, 23, 8,
+                9, 7, 6, 7, 8, 7, 6, 55, 8, 23, 24, 12, 11, 7, 9, 11, 12, 6, 7, 22, 5,
+                7, 24, 6, 11, 9, 6, 7, 22, 7, 11, 38, 7, 9, 8, 25, 11, 8, 11, 9, 12,
+                8, 12, 5, 38, 5, 38, 5, 11, 7, 5, 6, 21, 6, 10, 53, 8, 7, 24, 10, 27,
+                44, 253, 253, 253, 252, 252, 252, 13, 12, 45, 12, 45, 12, 61, 12, 45,
+                44, 173};
+
+            /// <summary>
+            /// bit lengths of length codes 0..15
+            /// </summary> 
+            private static readonly byte[] LENGTH_BIT_LENGTHS = { 2, 35, 36, 53, 38, 23 };
+
+            /// <summary>
+            ///  bit lengths of distance codes 0..63
+            /// </summary>
+            private static readonly byte[] DISTANCE_BIT_LENGTHS = { 2, 20, 53, 230, 247, 151, 248 };
+
+            public static readonly HuffmanTable LITERAL_CODE = new HuffmanTable(256, LITERAL_BIT_LENGTHS);
+            public static readonly HuffmanTable LENGTH_CODE = new HuffmanTable(16, LENGTH_BIT_LENGTHS);
+            public static readonly HuffmanTable DISTANCE_CODE = new HuffmanTable(64, DISTANCE_BIT_LENGTHS);
+
             public readonly short[] count;
             public readonly short[] symbol;
 
@@ -438,6 +441,4 @@ namespace Utils {
                 return left;
             }
         }
-    }
-
 }
