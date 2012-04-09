@@ -1,0 +1,7 @@
+This is a translation into C# of the PKWare compression algorithm implemented in C by Mark Adler. 
+
+See https://github.com/madler/zlib/tree/master/contrib/blast
+
+NOTE: this software is made available under the Apache 2 license.
+
+
