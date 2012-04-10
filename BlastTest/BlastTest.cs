@@ -31,9 +31,9 @@ namespace BlastTests {
 		[TestMethod]
 		public void decompress_text_file()
 		{
+			// setup
             var baseFolder = GetTestFileFolder();
 
-			// setup
 			using (var input = new FileStream(Path.Combine(baseFolder, "test.bin"), FileMode.Open, FileAccess.Read))
 			using (var output = new FileStream(Path.Combine(baseFolder, "test.decomp.log"), FileMode.Create, FileAccess.Write))
 			{
@@ -55,8 +55,10 @@ namespace BlastTests {
 		public void decompress_binary_file()
 		{
 			// setup
-			using (var input = new FileStream(@"D:\Source\ref\blast\BlastTest\test-files\blast.msg.cmp", FileMode.Open, FileAccess.Read))
-			using (var output = new FileStream(@"D:\Source\ref\blast\BlastTest\test-files\blast.decomp.msg", FileMode.Create, FileAccess.Write))
+            var baseFolder = GetTestFileFolder();
+
+            using (var input = new FileStream(Path.Combine(baseFolder, "blast.msg.cmp"), FileMode.Open, FileAccess.Read))
+			using (var output = new FileStream(Path.Combine(baseFolder, "blast.decomp.msg"), FileMode.Create, FileAccess.Write))
 			{
 
 				// test

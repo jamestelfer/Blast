@@ -213,6 +213,7 @@ namespace Utils {
 			} while (true);
 
 			// write remaining bytes
+            log("flush remaining");
 			FlushOutputBuffer();
 		}
 
@@ -328,7 +329,7 @@ namespace Utils {
         private void WriteBuffer(byte b)
 		{
 			EnsureBufferSpace(1);
-            log("lit: {0}", (char)b);
+            //log("lit: {0}", (char)b);
 			_outputBuffer[_outputBufferPos++] = b;
 		}
 
@@ -359,11 +360,13 @@ namespace Utils {
 				_outputBufferPos = MAXWIN;
 			}
 		}
-
-		private void FlushOutputBufferSection(int count)
-		{
-            log("flush[0..{0}]", count);
+        int written = 0;
+		private void FlushOutputBufferSection(int count) 
+        {
+            written += count;
+            log("flush[0..{0}], wrote {1} kiB so far", decimal.Round(count/1024m, 2), written);
             logsegment("flushing", 0, count);
+
 			_outputStream.Write(_outputBuffer, 0, count);
 		}
 
@@ -382,7 +385,7 @@ namespace Utils {
             Console.WriteLine(format, values);
         }
         private void logsegment(string message, int offset, int count) {
-            Console.WriteLine(message + ":" + Encoding.ASCII.GetString(_outputBuffer, offset, count).Replace("\r", "\\r").Replace("\n", "\\n"));
+            //Console.WriteLine(message + ":" + Encoding.ASCII.GetString(_outputBuffer, offset, count).Replace("\r", "\\r").Replace("\n", "\\n"));
         }
 
 		/*
