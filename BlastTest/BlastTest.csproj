@@ -46,13 +46,20 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="BlastTests.cs" />
+    <Compile Include="BlastTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Blast\Blast.csproj">
       <Project>{D59247C7-1CA0-45A7-9612-13406AE4514B}</Project>
       <Name>Blast</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="test-files\test.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="test-files\blast.msg.cmp" />
+    <None Include="test-files\test.bin" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

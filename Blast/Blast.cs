@@ -261,15 +261,6 @@ namespace Utils {
 				if (left == 0)
 					break;
 
-				if (state.left == 0)
-				{
-					state.left = state.inputStream.Read(state.inputBuffer, 0, state.inputBuffer.Length);
-					if (state.left == 0)
-					{
-						throw new BlastException(BlastException.OutOfInputMessage);
-					}
-				}
-
 				bitbuf = state.ConsumeByte();
 				if (left > 8)
 					left = 8;
@@ -284,12 +275,6 @@ namespace Utils {
 
 			while (state.bitcnt < need)
 			{
-				if (state.left == 0)
-				{
-					state.left = state.inputStream.Read(state.inputBuffer, 0, state.inputBuffer.Length);
-					if (state.left == 0)
-						throw new BlastException(BlastException.OutOfInputMessage);
-				}
 				val |= ((int)state.ConsumeByte()) << state.bitcnt;
 				state.bitcnt += 8;
 			}
@@ -308,6 +293,17 @@ namespace Utils {
 
 			public byte ConsumeByte()
 			{
+				if (left == 0)
+				{
+					left = inputStream.Read(inputBuffer, 0, inputBuffer.Length);
+					inputBufferPos = 0;
+
+					if (left == 0)
+					{
+						throw new BlastException(BlastException.OutOfInputMessage);
+					}
+				}
+
 				byte b = inputBuffer[inputBufferPos++];
 				left--;
 				return b;
