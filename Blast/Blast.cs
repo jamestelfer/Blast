@@ -141,13 +141,13 @@ namespace Utils {
 			int fromIndex;
 
 			// read header 
-			codedLiteral = bits(8);
+			codedLiteral = GetBits(8);
 			if (codedLiteral > 1)
 			{
 				throw new BlastException(BlastException.LiteralFlagMessage);
 			}
 
-			dictSize = bits(8);
+			dictSize = GetBits(8);
 
 			if (dictSize < 4 || dictSize > 6)
 			{
@@ -157,12 +157,12 @@ namespace Utils {
 			// decode literals and length/distance pairs 
 			do
 			{
-				if (bits(1) > 0)
+				if (GetBits(1) > 0)
 				{ // 0 == literal, 1 == length+distance
 
 					// get length 
 					symbol = Decode(HuffmanTable.LENGTH_CODE);
-					copyLength = LENGTH_CODE_BASE[symbol] + bits(LENGTH_CODE_EXTRA[symbol]);
+					copyLength = LENGTH_CODE_BASE[symbol] + GetBits(LENGTH_CODE_EXTRA[symbol]);
 
 					if (copyLength == 519)
 					{ // end code
@@ -172,7 +172,7 @@ namespace Utils {
 					// get distance 
 					symbol = copyLength == 2 ? 2 : dictSize;
 					copyDist = Decode(HuffmanTable.DISTANCE_CODE) << symbol;
-					copyDist += bits(symbol);
+					copyDist += GetBits(symbol);
 					copyDist++;
 
                     //log("l[{0}]/d[{1}]", copyLength, copyDist);
@@ -207,7 +207,7 @@ namespace Utils {
 				else
 				{
 					// get literal and write it 
-					symbol = codedLiteral != 0 ? Decode(HuffmanTable.LITERAL_CODE) : bits(8);
+					symbol = codedLiteral != 0 ? Decode(HuffmanTable.LITERAL_CODE) : GetBits(8);
 					WriteBuffer((byte)symbol);
 				}
 			} while (true);
@@ -287,7 +287,7 @@ namespace Utils {
 
         #region Input stream
 
-        private int bits(int need)
+        private int GetBits(int need)
 		{
 			int val = _bitBuffer;
 
