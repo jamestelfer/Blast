@@ -32,7 +32,23 @@ namespace Utils {
 		/// </summary>
 		private static readonly byte[] LENGTH_CODE_EXTRA = { 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8 };
 
-		private BlastState state;
+
+        //
+        // state variables
+        //
+        private Stream _inputStream;
+        private byte[] _inputBuffer = new byte[16384];
+        private int _inputBufferPos;
+        private int _inputBufferRemaining; // available input in buffer
+
+        private int _bitBuffer; // bit buffer 
+        private int _bitBufferCount; // number of bits in bit buffer 
+
+        private Stream _outputStream;
+        private byte[] _outputBuffer = new byte[MAXWIN * 2]; // output buffer and sliding window 
+        private int _outputBufferPos; // index of next write location in out[] 
+
+
 
 		/// <summary>
 		/// <para>Decompress input to output using the provided infun() and outfun() calls.
@@ -67,15 +83,12 @@ namespace Utils {
 		/// </summary>
 		public Blast(Stream inputStream, Stream outputStream)
 		{
-			state = new BlastState()
-			{
-				inputStream = inputStream,
-				left = 0,
-				bitbuf = 0,
-				bitcnt = 0,
-				outputStream = outputStream,
-				outputBufferPos = 0
-			};
+			this._inputStream = inputStream;
+			this._inputBufferRemaining = 0;
+			this._bitBuffer = 0;
+			this._bitBufferCount = 0;
+			this._outputStream = outputStream;
+            this._outputBufferPos = 0;
 		}
 
 		/// <summary>
@@ -162,7 +175,9 @@ namespace Utils {
 					copyDist += bits(symbol);
 					copyDist++;
 
-					if (copyDist > state.outputBufferPos)
+                    //log("l[{0}]/d[{1}]", copyLength, copyDist);
+
+					if (copyDist > _outputBufferPos)
 					{
 						throw new BlastException(BlastException.DistanceMessage);
 					}
@@ -170,7 +185,7 @@ namespace Utils {
 					// copy length bytes from distance bytes back 
 					do
 					{
-						fromIndex = state.outputBufferPos - copyDist;
+						fromIndex = _outputBufferPos - copyDist;
 						copyCount = copyDist;
 
 						if (fromIndex < 0)
@@ -183,7 +198,7 @@ namespace Utils {
 							copyCount = copyLength;
 						}
 
-						state.CopyBufferSection(fromIndex, copyCount);
+						CopyBufferSection(fromIndex, copyCount);
 
 						copyLength -= copyCount;
 
@@ -193,12 +208,12 @@ namespace Utils {
 				{
 					// get literal and write it 
 					symbol = codedLiteral != 0 ? Decode(HuffmanTable.LITERAL_CODE) : bits(8);
-					state.WriteBuffer((byte)symbol);
+					WriteBuffer((byte)symbol);
 				}
 			} while (true);
 
 			// write remaining bytes
-			state.FlushOutputBuffer();
+			FlushOutputBuffer();
 		}
 
 		/*
@@ -233,8 +248,8 @@ namespace Utils {
 			int left;           // bits left in next or left to process 
 			int next = 1;           // next number of codes 
 
-			bitbuf = state.bitbuf;
-			left = state.bitcnt;
+			bitbuf = _bitBuffer;
+			left = _bitBufferCount;
 
 			while (true)
 			{
@@ -245,8 +260,8 @@ namespace Utils {
 					count = h.count[next++];
 					if (code < first + count)
 					{
-						state.bitbuf = bitbuf;
-						state.bitcnt = (state.bitcnt - len) & 7;
+						_bitBuffer = bitbuf;
+						_bitBufferCount = (_bitBufferCount - len) & 7;
 
 						return h.symbol[index + (code - first)];
 					}
@@ -261,7 +276,7 @@ namespace Utils {
 				if (left == 0)
 					break;
 
-				bitbuf = state.ConsumeByte();
+				bitbuf = ConsumeByte();
 				if (left > 8)
 					left = 8;
 			}
@@ -269,95 +284,106 @@ namespace Utils {
 			return -9;
 		}
 
-		private int bits(int need)
-		{
-			int val = state.bitbuf;
+        #region Input stream
 
-			while (state.bitcnt < need)
+        private int bits(int need)
+		{
+			int val = _bitBuffer;
+
+			while (_bitBufferCount < need)
 			{
-				val |= ((int)state.ConsumeByte()) << state.bitcnt;
-				state.bitcnt += 8;
+				val |= ((int)ConsumeByte()) << _bitBufferCount;
+				_bitBufferCount += 8;
 			}
-			state.bitbuf = val >> need;
-			state.bitcnt -= need;
+
+			_bitBuffer = val >> need;
+			_bitBufferCount -= need;
+
 			return val & ((1 << need) - 1);
 		}
 
-		private class BlastState
+		private byte ConsumeByte()
 		{
-			public Stream inputStream;
-
-			public byte[] inputBuffer = new byte[16384]; 
-			public int inputBufferPos;
-			public int left; /* available input at in */
-
-			public byte ConsumeByte()
+			if (_inputBufferRemaining == 0)
 			{
-				if (left == 0)
+				_inputBufferRemaining = _inputStream.Read(_inputBuffer, 0, _inputBuffer.Length);
+				_inputBufferPos = 0;
+
+				if (_inputBufferRemaining == 0)
 				{
-					left = inputStream.Read(inputBuffer, 0, inputBuffer.Length);
-					inputBufferPos = 0;
-
-					if (left == 0)
-					{
-						throw new BlastException(BlastException.OutOfInputMessage);
-					}
-				}
-
-				byte b = inputBuffer[inputBufferPos++];
-				left--;
-				return b;
-			}
-
-			public int bitbuf;/* bit buffer */
-			public int bitcnt;/* number of bits in bit buffer */
-
-			public Stream outputStream;
-
-			public int outputBufferPos;/* index of next write location in out[] */
-			public byte[] outputBuffer = new byte[MAXWIN * 2];/* output buffer and sliding window */
-
-			public void WriteBuffer(byte b)
-			{
-				EnsureBufferSpace(1);
-				outputBuffer[outputBufferPos++] = b;
-			}
-
-			public void CopyBufferSection(int fromIndex, int copyCount)
-			{
-				EnsureBufferSpace(copyCount);
-				Buffer.BlockCopy(outputBuffer, fromIndex, outputBuffer, outputBufferPos, copyCount);
-				outputBufferPos += copyCount;
-			}
-
-			private void EnsureBufferSpace(int required)
-			{
-				// is there room in the buffer?
-				if (outputBufferPos + required >= outputBuffer.Length)
-				{
-					// flush the initial section
-					int startWindowOffset = outputBufferPos - MAXWIN;
-					FlushOutputBufferSection(startWindowOffset); // only flush the section that's not part of the window
-
-					// position the stream further back
-					Buffer.BlockCopy(outputBuffer, startWindowOffset, outputBuffer, 0, MAXWIN);
-					outputBufferPos = MAXWIN;
+					throw new BlastException(BlastException.OutOfInputMessage);
 				}
 			}
 
-			private void FlushOutputBufferSection(int count)
-			{
-				outputStream.Write(outputBuffer, 0, count);
-			}
+			byte b = _inputBuffer[_inputBufferPos++];
+			_inputBufferRemaining--;
 
-			public void FlushOutputBuffer()
+			return b;
+		}
+
+        #endregion
+
+        #region Output stream
+
+        private void WriteBuffer(byte b)
+		{
+			EnsureBufferSpace(1);
+            log("lit: {0}", (char)b);
+			_outputBuffer[_outputBufferPos++] = b;
+		}
+
+        private void CopyBufferSection(int fromIndex, int copyCount)
+		{
+			EnsureBufferSpace(copyCount);
+            //log("CopyBufferSection: [{0}->{1}, {2}]", fromIndex, _outputBufferPos, copyCount);
+            logsegment("copy", fromIndex, copyCount);
+
+			Buffer.BlockCopy(_outputBuffer, fromIndex, _outputBuffer, _outputBufferPos, copyCount);
+			_outputBufferPos += copyCount;
+		}
+
+        private void EnsureBufferSpace(int required)
+		{
+			// is there room in the buffer?
+			if (_outputBufferPos + required >= _outputBuffer.Length)
 			{
-				if (outputBufferPos > 0)
-				{
-					outputStream.Write(outputBuffer, 0, outputBufferPos);
-				}
+				// flush the initial section
+				int startWindowOffset = _outputBufferPos - MAXWIN;
+                log("output: sz={0} pos={1} req={2} offset={3}", _outputBuffer.Length, _outputBufferPos, required, startWindowOffset);
+                FlushOutputBufferSection(startWindowOffset); // only flush the section that's not part of the window
+
+                log("reposition stream: [{0}->0, count={1}]", startWindowOffset, MAXWIN);
+
+				// position the stream further back
+				Buffer.BlockCopy(_outputBuffer, startWindowOffset, _outputBuffer, 0, MAXWIN);
+				_outputBufferPos = MAXWIN;
 			}
 		}
+
+		private void FlushOutputBufferSection(int count)
+		{
+            log("flush[0..{0}]", count);
+            logsegment("flushing", 0, count);
+			_outputStream.Write(_outputBuffer, 0, count);
+		}
+
+        private void FlushOutputBuffer()
+		{
+			if (_outputBufferPos > 0)
+			{
+				FlushOutputBufferSection(_outputBufferPos);
+                _outputBufferPos = 0;
+			}
+		}
+
+        #endregion
+
+        private void log(string format, params object[] values) {
+            Console.WriteLine(format, values);
+        }
+        private void logsegment(string message, int offset, int count) {
+            Console.WriteLine(message + ":" + Encoding.ASCII.GetString(_outputBuffer, offset, count).Replace("\r", "\\r").Replace("\n", "\\n"));
+        }
 
 		/*
 		 * Huffman code decoding tables.  count[1..MAXBITS] is the number of symbols of
