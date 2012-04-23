@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) 2012 James Telfer, released under the Apache 2.0 license: 
+// see http://www.apache.org/licenses/LICENSE-2.0.html.
+
+using System;
 using System.IO;
 using System.Text;
 using System.Collections.Generic;

@@ -1,4 +1,46 @@
-﻿using System;
+﻿/*
+Translation to managed C# of blast.c/h, published by Mark Adler. The copyright notice
+for the C implementation is included below. This implementation varies from the C
+original. 
+ 
+Any part of this implementation that is not covered by the original
+notice is Copyright (c) 2012 James Telfer, and is released under the Apache 2.0 license: 
+see http://www.apache.org/licenses/LICENSE-2.0.html.
+
+It should be noted that this algorithm was originally implemented by
+PKWare, and while there was no reference to their implementation
+there may be portions that come under patents originating from that
+company.
+ 
+The license terms do not and cannot cover any part of this work that
+is covered by patent claims of any other entity.
+
+ 
+https://github.com/madler/zlib/blob/master/contrib/blast/
+blast.c
+
+Copyright (C) 2003 Mark Adler
+version 1.1, 16 Feb 2003
+
+This software is provided 'as-is', without any express or implied
+warranty.  In no event will the author be held liable for any damages
+arising from the use of this software.
+
+Permission is granted to anyone to use this software for any purpose,
+including commercial applications, and to alter it and redistribute it
+freely, subject to the following restrictions:
+
+1. The origin of this software must not be misrepresented; you must not
+    claim that you wrote the original software. If you use this software
+    in a product, an acknowledgment in the product documentation would be
+    appreciated but is not required.
+2. Altered source versions must be plainly marked as such, and must not be
+    misrepresented as being the original software.
+3. This notice may not be removed or altered from any source distribution.
+
+Mark Adler    madler@alumni.caltech.edu
+ */
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
