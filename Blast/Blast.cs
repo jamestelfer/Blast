@@ -425,8 +425,6 @@ namespace Utils {
 		private void CopyBufferSection(int fromIndex, int copyCount)
 		{
 			EnsureBufferSpace(copyCount);
-			//log("CopyBufferSection: [{0}->{1}, {2}]", fromIndex, _outputBufferPos, copyCount);
-			logsegment("copy", fromIndex, copyCount);
 
 			Buffer.BlockCopy(_outputBuffer, fromIndex, _outputBuffer, _outputBufferPos, copyCount);
 			_outputBufferPos += copyCount;
