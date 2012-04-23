@@ -32,7 +32,7 @@ namespace BlastTests {
 		public void decompress_text_file()
 		{
 			// setup
-            var baseFolder = GetTestFileFolder();
+			var baseFolder = GetTestFileFolder();
 
 			using (var input = new FileStream(Path.Combine(baseFolder, "test.bin"), FileMode.Open, FileAccess.Read))
 			using (var output = new FileStream(Path.Combine(baseFolder, "test.decomp.log"), FileMode.Create, FileAccess.Write))
@@ -46,7 +46,26 @@ namespace BlastTests {
 			// assert
 		}
 
-        private static string GetTestFileFolder() {
+		[TestMethod]
+		public void decompress_large_text_file()
+		{
+			// setup
+			var baseFolder = GetTestFileFolder();
+
+			using (var input = new FileStream(Path.Combine(baseFolder, "large.log.cmp"), FileMode.Open, FileAccess.Read))
+			using (var output = new FileStream(Path.Combine(baseFolder, "large.decomp.log"), FileMode.Create, FileAccess.Write))
+			{
+
+				// test
+				var b = new Blast(input, output);
+				b.Decompress();
+			}
+
+			// assert
+		}
+
+		private static string GetTestFileFolder()
+		{
             var projDir = Directory.GetParent(System.Reflection.Assembly.GetExecutingAssembly().Location).Parent.Parent.FullName;
             return Path.Combine(projDir, "test-files");
         }

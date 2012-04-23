@@ -5,22 +5,23 @@ using System.Linq;
 using System.Text;
 
 namespace Utils {
-    public class BlastException : Exception {
-        public const string OutOfInputMessage = "Ran out of input before completing decompression";
-        public const string OutputMessage = "Output error before completing decompression";
-        public const string LiteralFlagMessage = "Literal flag not zero or one";
-        public const string DictionarySizeMessage = "Dictionary size not in 4..6";
-        public const string DistanceMessage = "Distance is too far back";
+	public class BlastException : Exception {
+		public const string OutOfInputMessage = "Ran out of input before completing decompression";
+		public const string OutputMessage = "Output error before completing decompression";
+		public const string LiteralFlagMessage = "Literal flag not zero or one";
+		public const string DictionarySizeMessage = "Dictionary size not in 4..6";
+		public const string DistanceMessage = "Distance is too far back";
 
-        public BlastException() : base() { }
-        public BlastException(string message) : base(message) { }
-        public BlastException(string message, Exception inner) : base(message, inner) { }
-    }
+		public BlastException() : base() { }
+		public BlastException(string message) : base(message) { }
+		public BlastException(string message, Exception inner) : base(message, inner) { }
+	}
 
 	public class Blast
 	{
-		public const int MAXBITS = 13;
-		public const int MAXWIN = 4096;
+		public const int MAX_BITS = 13;
+		public const int MAX_WIN = 4096;
+		private const int END_OF_STREAM = 519;
 
 		/// <summary>
 		/// base for length codes
@@ -33,20 +34,20 @@ namespace Utils {
 		private static readonly byte[] LENGTH_CODE_EXTRA = { 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8 };
 
 
-        //
-        // state variables
-        //
-        private Stream _inputStream;
-        private byte[] _inputBuffer = new byte[16384];
-        private int _inputBufferPos;
-        private int _inputBufferRemaining; // available input in buffer
+		//
+		// state variables
+		//
+		private Stream _inputStream;
+		private byte[] _inputBuffer = new byte[16384];
+		private int _inputBufferPos;
+		private int _inputBufferRemaining; // available input in buffer
 
-        private int _bitBuffer; // bit buffer 
-        private int _bitBufferCount; // number of bits in bit buffer 
+		private int _bitBuffer; // bit buffer 
+		private int _bitBufferCount; // number of bits in bit buffer 
 
-        private Stream _outputStream;
-        private byte[] _outputBuffer = new byte[MAXWIN * 2]; // output buffer and sliding window 
-        private int _outputBufferPos; // index of next write location in out[] 
+		private Stream _outputStream;
+		private byte[] _outputBuffer = new byte[MAX_WIN * 2]; // output buffer and sliding window 
+		private int _outputBufferPos; // index of next write location in out[] 
 
 
 
@@ -88,7 +89,19 @@ namespace Utils {
 			this._bitBuffer = 0;
 			this._bitBufferCount = 0;
 			this._outputStream = outputStream;
-            this._outputBufferPos = 0;
+			this._outputBufferPos = 0;
+		}
+
+		/// <summary>
+		/// Decode PKWare Compression Library stream.
+		/// </summary> 
+		public void Decompress()
+		{
+			do
+			{
+				// some files are composed of multiple compressed streams
+				DecompressStream();
+			} while (IsInputRemaining());
 		}
 
 		/// <summary>
@@ -129,14 +142,14 @@ namespace Utils {
 		///   ignoring whether the length is greater than the distance or not implements
 		///   this correctly.
 		/// </summary>
-		public void Decompress()
+		private void DecompressStream()
 		{
-			int codedLiteral;            // true if literals are coded 
-			int dictSize;           // log2(dictionary size) - 6 
-			int symbol;         // decoded symbol, extra bits for distance 
-			int copyLength;            // length for copy 
-			int copyDist;           // distance for copy 
-			int copyCount;           // copy counter 
+			int codedLiteral;			// true if literals are coded 
+			int dictSize;		   // log2(dictionary size) - 6 
+			int symbol;		 // decoded symbol, extra bits for distance 
+			int copyLength;			// length for copy 
+			int copyDist;		   // distance for copy 
+			int copyCount;		   // copy counter 
 
 			int fromIndex;
 
@@ -154,67 +167,70 @@ namespace Utils {
 				throw new BlastException(BlastException.DictionarySizeMessage);
 			}
 
-			// decode literals and length/distance pairs 
-			do
+			try
 			{
-				if (GetBits(1) > 0)
-				{ // 0 == literal, 1 == length+distance
-
-					// get length 
-					symbol = Decode(HuffmanTable.LENGTH_CODE);
-					copyLength = LENGTH_CODE_BASE[symbol] + GetBits(LENGTH_CODE_EXTRA[symbol]);
-
-					if (copyLength == 519)
-					{ // end code
-						break;
-					}
-
-					// get distance 
-					symbol = copyLength == 2 ? 2 : dictSize;
-					copyDist = Decode(HuffmanTable.DISTANCE_CODE) << symbol;
-					copyDist += GetBits(symbol);
-					copyDist++;
-
-                    //log("l[{0}]/d[{1}]", copyLength, copyDist);
-
-					if (copyDist > _outputBufferPos)
-					{
-						throw new BlastException(BlastException.DistanceMessage);
-					}
-
-					// copy length bytes from distance bytes back 
-					do
-					{
-						fromIndex = _outputBufferPos - copyDist;
-						copyCount = copyDist;
-
-						if (fromIndex < 0)
-						{
-							fromIndex += copyCount;
-						}
-
-						if (copyCount > copyLength)
-						{
-							copyCount = copyLength;
-						}
-
-						CopyBufferSection(fromIndex, copyCount);
-
-						copyLength -= copyCount;
-
-					} while (copyLength != 0);
-				}
-				else
+				// decode literals and length/distance pairs 
+				do
 				{
-					// get literal and write it 
-					symbol = codedLiteral != 0 ? Decode(HuffmanTable.LITERAL_CODE) : GetBits(8);
-					WriteBuffer((byte)symbol);
-				}
-			} while (true);
+					if (GetBits(1) > 0)
+					{ // 0 == literal, 1 == length+distance
 
-			// write remaining bytes
-            log("flush remaining");
-			FlushOutputBuffer();
+						// get length 
+						symbol = Decode(HuffmanTable.LENGTH_CODE);
+						copyLength = LENGTH_CODE_BASE[symbol] + GetBits(LENGTH_CODE_EXTRA[symbol]);
+
+						if (copyLength == END_OF_STREAM) // sentinel value
+						{
+							break;
+						}
+
+						// get distance 
+						symbol = copyLength == 2 ? 2 : dictSize;
+						copyDist = Decode(HuffmanTable.DISTANCE_CODE) << symbol;
+						copyDist += GetBits(symbol);
+						copyDist++;
+
+						if (copyDist > _outputBufferPos)
+						{
+							throw new BlastException(BlastException.DistanceMessage);
+						}
+
+						// copy length bytes from distance bytes back 
+						do
+						{
+							fromIndex = _outputBufferPos - copyDist;
+							copyCount = copyDist;
+
+							if (fromIndex < 0)
+							{
+								fromIndex += copyCount;
+							}
+
+							if (copyCount > copyLength)
+							{
+								copyCount = copyLength;
+							}
+
+							CopyBufferSection(fromIndex, copyCount);
+
+							copyLength -= copyCount;
+
+						} while (copyLength != 0);
+					}
+					else
+					{
+						// get literal and write it 
+						symbol = codedLiteral != 0 ? Decode(HuffmanTable.LITERAL_CODE) : GetBits(8);
+						WriteBuffer((byte)symbol);
+					}
+				} while (true);
+			}
+			finally
+			{
+				// write remaining bytes
+				FlushOutputBuffer();
+				FlushBits();
+			}
 		}
 
 		/*
@@ -240,14 +256,14 @@ namespace Utils {
 		 */
 		private int Decode(HuffmanTable h)
 		{
-			int len = 1;            // current number of bits in code 
-			int code = 0;           // len bits being decoded 
-			int first = 0;          // first code of length len 
-			int count;          // number of codes of length len 
-			int index = 0;          // index of first code of length len in symbol table 
-			int bitbuf;         // bits from stream 
-			int left;           // bits left in next or left to process 
-			int next = 1;           // next number of codes 
+			int len = 1;			// current number of bits in code 
+			int code = 0;		   // len bits being decoded 
+			int first = 0;		  // first code of length len 
+			int count;		  // number of codes of length len 
+			int index = 0;		  // index of first code of length len in symbol table 
+			int bitbuf;		 // bits from stream 
+			int left;		   // bits left in next or left to process 
+			int next = 1;		   // next number of codes 
 
 			bitbuf = _bitBuffer;
 			left = _bitBufferCount;
@@ -272,7 +288,7 @@ namespace Utils {
 					code <<= 1;
 					len++;
 				}
-				left = (MAXBITS + 1) - len;
+				left = (MAX_BITS + 1) - len;
 
 				if (left == 0)
 					break;
@@ -285,9 +301,9 @@ namespace Utils {
 			return -9;
 		}
 
-        #region Input stream
+		#region Input stream
 
-        private int GetBits(int need)
+		private int GetBits(int need)
 		{
 			int val = _bitBuffer;
 
@@ -303,12 +319,16 @@ namespace Utils {
 			return val & ((1 << need) - 1);
 		}
 
+		private void FlushBits()
+		{
+			_bitBufferCount = 0;
+		}
+
 		private byte ConsumeByte()
 		{
 			if (_inputBufferRemaining == 0)
 			{
-				_inputBufferRemaining = _inputStream.Read(_inputBuffer, 0, _inputBuffer.Length);
-				_inputBufferPos = 0;
+				DoReadBuffer();
 
 				if (_inputBufferRemaining == 0)
 				{
@@ -322,71 +342,85 @@ namespace Utils {
 			return b;
 		}
 
-        #endregion
+		private void DoReadBuffer()
+		{
+			_inputBufferRemaining = _inputStream.Read(_inputBuffer, 0, _inputBuffer.Length);
+			_inputBufferPos = 0;
+		}
 
-        #region Output stream
+		/// <summary>
+		/// Check for presence of more input without consuming it.
+		/// May refill the input buffer.
+		/// </summary>
+		/// <returns></returns>
+		private bool IsInputRemaining()
+		{
+			// is there any input in the buffer?
+			if (_inputBufferRemaining > 0)
+			{
+				return true;
+			}
 
-        private void WriteBuffer(byte b)
+			// try to fill it if not
+			DoReadBuffer();
+
+			// true if input now available
+			return _inputBufferRemaining > 0;
+		}
+
+
+		#endregion
+
+		#region Output stream
+
+		private void WriteBuffer(byte b)
 		{
 			EnsureBufferSpace(1);
-            //log("lit: {0}", (char)b);
+			//log("lit: {0}", (char)b);
 			_outputBuffer[_outputBufferPos++] = b;
 		}
 
-        private void CopyBufferSection(int fromIndex, int copyCount)
+		private void CopyBufferSection(int fromIndex, int copyCount)
 		{
 			EnsureBufferSpace(copyCount);
-            //log("CopyBufferSection: [{0}->{1}, {2}]", fromIndex, _outputBufferPos, copyCount);
-            logsegment("copy", fromIndex, copyCount);
+			//log("CopyBufferSection: [{0}->{1}, {2}]", fromIndex, _outputBufferPos, copyCount);
+			logsegment("copy", fromIndex, copyCount);
 
 			Buffer.BlockCopy(_outputBuffer, fromIndex, _outputBuffer, _outputBufferPos, copyCount);
 			_outputBufferPos += copyCount;
 		}
 
-        private void EnsureBufferSpace(int required)
+		private void EnsureBufferSpace(int required)
 		{
 			// is there room in the buffer?
 			if (_outputBufferPos + required >= _outputBuffer.Length)
 			{
 				// flush the initial section
-				int startWindowOffset = _outputBufferPos - MAXWIN;
-                log("output: sz={0} pos={1} req={2} offset={3}", _outputBuffer.Length, _outputBufferPos, required, startWindowOffset);
-                FlushOutputBufferSection(startWindowOffset); // only flush the section that's not part of the window
+				int startWindowOffset = _outputBufferPos - MAX_WIN;
 
-                log("reposition stream: [{0}->0, count={1}]", startWindowOffset, MAXWIN);
+				FlushOutputBufferSection(startWindowOffset); // only flush the section that's not part of the window
 
 				// position the stream further back
-				Buffer.BlockCopy(_outputBuffer, startWindowOffset, _outputBuffer, 0, MAXWIN);
-				_outputBufferPos = MAXWIN;
+				Buffer.BlockCopy(_outputBuffer, startWindowOffset, _outputBuffer, 0, MAX_WIN);
+				_outputBufferPos = MAX_WIN;
 			}
 		}
-        int written = 0;
-		private void FlushOutputBufferSection(int count) 
-        {
-            written += count;
-            log("flush[0..{0}], wrote {1} kiB so far", decimal.Round(count/1024m, 2), written);
-            logsegment("flushing", 0, count);
 
+		private void FlushOutputBufferSection(int count) 
+		{
 			_outputStream.Write(_outputBuffer, 0, count);
 		}
 
-        private void FlushOutputBuffer()
+		private void FlushOutputBuffer()
 		{
 			if (_outputBufferPos > 0)
 			{
 				FlushOutputBufferSection(_outputBufferPos);
-                _outputBufferPos = 0;
+				_outputBufferPos = 0;
 			}
 		}
 
-        #endregion
-
-        private void log(string format, params object[] values) {
-            Console.WriteLine(format, values);
-        }
-        private void logsegment(string message, int offset, int count) {
-            //Console.WriteLine(message + ":" + Encoding.ASCII.GetString(_outputBuffer, offset, count).Replace("\r", "\\r").Replace("\n", "\\n"));
-        }
+		#endregion
 
 		/*
 		 * Huffman code decoding tables.  count[1..MAXBITS] is the number of symbols of
@@ -400,12 +434,12 @@ namespace Utils {
 
 			// bit lengths of literal codes 
 			private static readonly byte[] LITERAL_BIT_LENGTHS = { 
-                11, 124, 8, 7, 28, 7, 188, 13, 76, 4, 10, 8, 12, 10, 12, 10, 8, 23, 8,
-                9, 7, 6, 7, 8, 7, 6, 55, 8, 23, 24, 12, 11, 7, 9, 11, 12, 6, 7, 22, 5,
-                7, 24, 6, 11, 9, 6, 7, 22, 7, 11, 38, 7, 9, 8, 25, 11, 8, 11, 9, 12,
-                8, 12, 5, 38, 5, 38, 5, 11, 7, 5, 6, 21, 6, 10, 53, 8, 7, 24, 10, 27,
-                44, 253, 253, 253, 252, 252, 252, 13, 12, 45, 12, 45, 12, 61, 12, 45,
-                44, 173};
+				11, 124, 8, 7, 28, 7, 188, 13, 76, 4, 10, 8, 12, 10, 12, 10, 8, 23, 8,
+				9, 7, 6, 7, 8, 7, 6, 55, 8, 23, 24, 12, 11, 7, 9, 11, 12, 6, 7, 22, 5,
+				7, 24, 6, 11, 9, 6, 7, 22, 7, 11, 38, 7, 9, 8, 25, 11, 8, 11, 9, 12,
+				8, 12, 5, 38, 5, 38, 5, 11, 7, 5, 6, 21, 6, 10, 53, 8, 7, 24, 10, 27,
+				44, 253, 253, 253, 252, 252, 252, 13, 12, 45, 12, 45, 12, 61, 12, 45,
+				44, 173};
 
 			/// <summary>
 			/// bit lengths of length codes 0..15
@@ -426,7 +460,7 @@ namespace Utils {
 
 			public HuffmanTable(int symbolSize, byte[] compacted)
 			{
-				count = new short[MAXBITS + 1];
+				count = new short[MAX_BITS + 1];
 				symbol = new short[symbolSize];
 
 				construct(compacted);
@@ -454,7 +488,7 @@ namespace Utils {
 				short symbol;// current symbol when stepping through length[] 
 				int len;// current length when stepping through h->count[] 
 				int left;// number of possible codes left of current length 
-				short[] offs = new short[MAXBITS + 1]; // offsets in symbol table for each length 
+				short[] offs = new short[MAX_BITS + 1]; // offsets in symbol table for each length 
 				short[] length = new short[256]; // code lengths 
 
 				int n;
@@ -474,7 +508,7 @@ namespace Utils {
 
 				// count number of codes of each length 
 				n = symbol;
-				for (len = 0; len <= MAXBITS; len++)
+				for (len = 0; len <= MAX_BITS; len++)
 					this.count[len] = 0;
 
 				for (symbol = 0; symbol < n; symbol++)
@@ -485,7 +519,7 @@ namespace Utils {
 
 				// check for an over-subscribed or incomplete set of lengths 
 				left = 1; // one possible code of zero length 
-				for (len = 1; len <= MAXBITS; len++)
+				for (len = 1; len <= MAX_BITS; len++)
 				{
 					left <<= 1; // one more bit, double codes left 
 					left -= this.count[len]; // deduct count from possible codes 
@@ -496,7 +530,7 @@ namespace Utils {
 				// generate offsets into symbol table for each length for sorting 
 				offs[1] = 0;
 
-				for (len = 1; len < MAXBITS; len++)
+				for (len = 1; len < MAX_BITS; len++)
 				{
 					offs[len + 1] = (short)(offs[len] + this.count[len]);
 				}
