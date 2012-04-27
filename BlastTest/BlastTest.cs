@@ -54,9 +54,10 @@ namespace BlastTests {
 		{
 			// setup
 			var baseFolder = GetTestFileFolder();
+            var resultFile = Path.Combine(baseFolder, "large.decomp.log");
 
 			using (var input = new FileStream(Path.Combine(baseFolder, "large.log.cmp"), FileMode.Open, FileAccess.Read))
-			using (var output = new FileStream(Path.Combine(baseFolder, "large.decomp.log"), FileMode.Create, FileAccess.Write))
+			using (var output = new FileStream(resultFile, FileMode.Create, FileAccess.Write))
 			{
 
 				// test
@@ -65,12 +66,7 @@ namespace BlastTests {
 			}
 
 			// assert
-		}
-
-		private static string GetTestFileFolder()
-		{
-            var projDir = Directory.GetParent(System.Reflection.Assembly.GetExecutingAssembly().Location).Parent.Parent.FullName;
-            return Path.Combine(projDir, "test-files");
+            AssertFile(Path.Combine(baseFolder, "large.log"), resultFile);
         }
 
 		[TestMethod]
@@ -79,8 +75,10 @@ namespace BlastTests {
 			// setup
             var baseFolder = GetTestFileFolder();
 
+            var resultFile = Path.Combine(baseFolder, "blast.decomp.msg");
+
             using (var input = new FileStream(Path.Combine(baseFolder, "blast.msg.cmp"), FileMode.Open, FileAccess.Read))
-			using (var output = new FileStream(Path.Combine(baseFolder, "blast.decomp.msg"), FileMode.Create, FileAccess.Write))
+			using (var output = new FileStream(resultFile, FileMode.Create, FileAccess.Write))
 			{
 
 				// test
@@ -89,6 +87,24 @@ namespace BlastTests {
 			}
 
 			// assert
+            AssertFile(Path.Combine(baseFolder, "blast.msg"), resultFile);
 		}
+
+        private void AssertFile(string expectedFileResult, string actualFileResult)
+        {
+            Assert.IsTrue(File.Exists(expectedFileResult), "Expected file result must exist");
+            Assert.IsTrue(File.Exists(actualFileResult), "Actual file result must exist");
+
+            var exp = new FileInfo(expectedFileResult);
+            var act = new FileInfo(actualFileResult);
+
+            Assert.AreEqual(exp.Length, act.Length, "File sizes must match");
+        }
+
+		private static string GetTestFileFolder()
+		{
+            var projDir = Directory.GetParent(System.Reflection.Assembly.GetExecutingAssembly().Location).Parent.Parent.FullName;
+            return Path.Combine(projDir, "test-files");
+        }
 	}
 }

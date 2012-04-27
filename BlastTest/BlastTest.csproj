@@ -55,11 +55,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="test-files\test.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="test-files\blast.msg.cmp" />
-    <None Include="test-files\test.bin" />
+    <Folder Include="test-files\" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
