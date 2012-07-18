@@ -59,7 +59,7 @@ namespace Utils {
 		public BlastException(string message, Exception inner) : base(message, inner) { }
 	}
 
-	public class Blast : Stream
+	public class Blast
 	{
 		public const int MAX_BITS = 13;
 		public const int MAX_WIN = 4096;
@@ -213,27 +213,32 @@ namespace Utils {
 					if (GetBits(1) > 0)
 					{ // 0 == literal, 1 == length+distance
 
-						// get length 
+						// decode length 
 						decodedSymbol = Decode(HuffmanTable.LENGTH_CODE);
 						copyLength = LENGTH_CODE_BASE[decodedSymbol] + GetBits(LENGTH_CODE_EXTRA[decodedSymbol]);
 
 						if (copyLength == END_OF_STREAM) // sentinel value
 						{
+                            // no more for this stream,
+                            // stop and flush
 							break;
 						}
 
-						// get distance 
+						// decode distance 
 						decodedSymbol = copyLength == 2 ? 2 : dictSize;
 						copyDist = Decode(HuffmanTable.DISTANCE_CODE) << decodedSymbol;
 						copyDist += GetBits(decodedSymbol);
 						copyDist++;
 
+                        // malformed input - you can't go back that far
 						if (copyDist > _outputBufferPos)
 						{
 							throw new BlastException(BlastException.DistanceMessage);
 						}
 
-						// copy length bytes from distance bytes back 
+                        // Copy copyLength bytes from copyDist bytes back.
+                        // If copyLength is greater than copyDist, repeatedly 
+                        // copy copyDist bytes up to a count of copyLength.
 						do
 						{
 							fromIndex = _outputBufferPos - copyDist;
