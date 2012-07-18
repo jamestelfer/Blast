@@ -59,7 +59,7 @@ namespace Utils {
 		public BlastException(string message, Exception inner) : base(message, inner) { }
 	}
 
-	public class Blast
+	public class Blast : Stream
 	{
 		public const int MAX_BITS = 13;
 		public const int MAX_WIN = 4096;
@@ -81,16 +81,15 @@ namespace Utils {
 		//
 		private Stream _inputStream;
 		private byte[] _inputBuffer = new byte[16384];
-		private int _inputBufferPos;
-		private int _inputBufferRemaining; // available input in buffer
+		private int _inputBufferPos = 0;
+		private int _inputBufferRemaining = 0; // available input in buffer
 
-		private int _bitBuffer; // bit buffer 
-		private int _bitBufferCount; // number of bits in bit buffer 
+		private int _bitBuffer = 0; // bit buffer 
+		private int _bitBufferCount = 0; // number of bits in bit buffer 
 
-		private Stream _outputStream;
+        private Stream _outputStream;
 		private byte[] _outputBuffer = new byte[MAX_WIN * 2]; // output buffer and sliding window 
-		private int _outputBufferPos; // index of next write location in out[] 
-
+        private int _outputBufferPos = 0; // index of next write location in _outputBuffer[] 
 
 
 		/// <summary>
@@ -127,14 +126,10 @@ namespace Utils {
 		public Blast(Stream inputStream, Stream outputStream)
 		{
 			this._inputStream = inputStream;
-			this._inputBufferRemaining = 0;
-			this._bitBuffer = 0;
-			this._bitBufferCount = 0;
-			this._outputStream = outputStream;
-			this._outputBufferPos = 0;
+            this._outputStream = outputStream;
 		}
 
-		/// <summary>
+        /// <summary>
 		/// Decode PKWare Compression Library stream.
 		/// </summary> 
 		public void Decompress()
@@ -186,16 +181,16 @@ namespace Utils {
 		/// </summary>
 		private void DecompressStream()
 		{
-			int codedLiteral;			// true if literals are coded 
+			int codedLiteral; // true if literals are coded 
 			int dictSize;		   // log2(dictionary size) - 6 
-			int symbol;		 // decoded symbol, extra bits for distance 
+			int decodedSymbol;		 // decoded symbol, extra bits for distance 
 			int copyLength;			// length for copy 
 			int copyDist;		   // distance for copy 
 			int copyCount;		   // copy counter 
 
 			int fromIndex;
 
-			// read header 
+			// read header (start of compressed stream)
 			codedLiteral = GetBits(8);
 			if (codedLiteral > 1)
 			{
@@ -209,6 +204,7 @@ namespace Utils {
 				throw new BlastException(BlastException.DictionarySizeMessage);
 			}
 
+            // decode the compressed stream
 			try
 			{
 				// decode literals and length/distance pairs 
@@ -218,8 +214,8 @@ namespace Utils {
 					{ // 0 == literal, 1 == length+distance
 
 						// get length 
-						symbol = Decode(HuffmanTable.LENGTH_CODE);
-						copyLength = LENGTH_CODE_BASE[symbol] + GetBits(LENGTH_CODE_EXTRA[symbol]);
+						decodedSymbol = Decode(HuffmanTable.LENGTH_CODE);
+						copyLength = LENGTH_CODE_BASE[decodedSymbol] + GetBits(LENGTH_CODE_EXTRA[decodedSymbol]);
 
 						if (copyLength == END_OF_STREAM) // sentinel value
 						{
@@ -227,9 +223,9 @@ namespace Utils {
 						}
 
 						// get distance 
-						symbol = copyLength == 2 ? 2 : dictSize;
-						copyDist = Decode(HuffmanTable.DISTANCE_CODE) << symbol;
-						copyDist += GetBits(symbol);
+						decodedSymbol = copyLength == 2 ? 2 : dictSize;
+						copyDist = Decode(HuffmanTable.DISTANCE_CODE) << decodedSymbol;
+						copyDist += GetBits(decodedSymbol);
 						copyDist++;
 
 						if (copyDist > _outputBufferPos)
@@ -241,14 +237,10 @@ namespace Utils {
 						do
 						{
 							fromIndex = _outputBufferPos - copyDist;
-							copyCount = copyDist;
 
-							if (fromIndex < 0)
-							{
-								fromIndex += copyCount;
-							}
-
-							if (copyCount > copyLength)
+                            copyCount = copyDist;
+                           
+                            if (copyCount > copyLength)
 							{
 								copyCount = copyLength;
 							}
@@ -262,8 +254,8 @@ namespace Utils {
 					else
 					{
 						// get literal and write it 
-						symbol = codedLiteral != 0 ? Decode(HuffmanTable.LITERAL_CODE) : GetBits(8);
-						WriteBuffer((byte)symbol);
+						decodedSymbol = codedLiteral != 0 ? Decode(HuffmanTable.LITERAL_CODE) : GetBits(8);
+						WriteBuffer((byte)decodedSymbol);
 					}
 				} while (true);
 			}
@@ -591,5 +583,5 @@ namespace Utils {
 				return left;
 			}
 		}
-	}
+   }
 }
