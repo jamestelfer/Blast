@@ -1,5 +1,6 @@
 
 *.suo
+*.csproj.user
 TestResults/
 bin/
 obj/
