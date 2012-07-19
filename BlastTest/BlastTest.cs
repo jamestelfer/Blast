@@ -97,8 +97,14 @@ namespace BlastTests {
 
             var exp = new FileInfo(expectedFileResult);
             var act = new FileInfo(actualFileResult);
-
+            
             Assert.AreEqual(exp.Length, act.Length, "File sizes must match");
+
+            using (var expStream = new FileStream(expectedFileResult, FileMode.Open, FileAccess.Read))
+            using (var actStream = new FileStream(actualFileResult, FileMode.Open, FileAccess.Read))
+            {
+                Assert.IsTrue(StreamsContentsAreEqual(expStream, actStream), "Files differ");
+            }
         }
 
 		private static string GetTestFileFolder()
@@ -106,5 +112,38 @@ namespace BlastTests {
             var projDir = Directory.GetParent(System.Reflection.Assembly.GetExecutingAssembly().Location).Parent.Parent.FullName;
             return Path.Combine(projDir, "test-files");
         }
-	}
+
+        // http://stackoverflow.com/questions/968935/c-sharp-binary-file-compare
+        private static bool StreamsContentsAreEqual(Stream stream1, Stream stream2)
+        {
+            const int bufferSize = 2048 * 2;
+            var buffer1 = new byte[bufferSize];
+            var buffer2 = new byte[bufferSize];
+
+            while (true)
+            {
+                int count1 = stream1.Read(buffer1, 0, bufferSize);
+                int count2 = stream2.Read(buffer2, 0, bufferSize);
+
+                if (count1 != count2)
+                {
+                    return false;
+                }
+
+                if (count1 == 0)
+                {
+                    return true;
+                }
+
+                int iterations = (int)Math.Ceiling((double)count1 / sizeof(Int64));
+                for (int i = 0; i < iterations; i++)
+                {
+                    if (BitConverter.ToInt64(buffer1, i * sizeof(Int64)) != BitConverter.ToInt64(buffer2, i * sizeof(Int64)))
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+    }
 }
