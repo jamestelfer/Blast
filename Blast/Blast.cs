@@ -272,27 +272,31 @@ namespace Utils {
 			}
 		}
 
-		/*
-		 * Decode a code from the stream s using huffman table h.  Return the symbol or
-		 * a negative value if there is an error.  If all of the lengths are zero, i.e.
-		 * an empty code, or if the code is incomplete and an invalid code is received,
-		 * then -9 is returned after reading MAXBITS bits.
-		 *
-		 * Format notes:
-		 *
-		 * - The codes as stored in the compressed data are bit-reversed relative to
-		 *   a simple integer ordering of codes of the same lengths.  Hence below the
-		 *   bits are pulled from the compressed data one at a time and used to
-		 *   build the code value reversed from what is in the stream in order to
-		 *   permit simple integer comparisons for decoding.
-		 *
-		 * - The first code for the shortest length is all ones.  Subsequent codes of
-		 *   the same length are simply integer decrements of the previous code.  When
-		 *   moving up a length, a one bit is appended to the code.  For a complete
-		 *   code, the last code of the longest length will be all zeros.  To support
-		 *   this ordering, the bits pulled during decoding are inverted to apply the
-		 *   more "natural" ordering starting with all zeros and incrementing.
-		 */
+		/// <summary>
+        /// <para>
+		/// Decode a code from the stream using huffman table h.  Return the symbol or
+		/// a negative value if there is an error.  If all of the lengths are zero, i.e.
+		/// an empty code, or if the code is incomplete and an invalid code is received,
+		/// then -9 is returned after reading MAXBITS bits.
+		/// </para>
+        /// 
+		/// <para>Format notes:</para>
+        /// 
+        /// <list type="bullet">
+		/// <item>The codes as stored in the compressed data are bit-reversed relative to
+		///   a simple integer ordering of codes of the same lengths.  Hence below the
+		///   bits are pulled from the compressed data one at a time and used to
+		///   build the code value reversed from what is in the stream in order to
+		///   permit simple integer comparisons for decoding.</item>
+		/// 
+		/// <item>The first code for the shortest length is all ones.  Subsequent codes of
+		///   the same length are simply integer decrements of the previous code.  When
+		///   moving up a length, a one bit is appended to the code.  For a complete
+		///   code, the last code of the longest length will be all zeros.  To support
+		///   this ordering, the bits pulled during decoding are inverted to apply the
+		///   more "natural" ordering starting with all zeros and incrementing.</item>
+        /// </list>
+		/// </summary>
 		private int Decode(HuffmanTable h)
 		{
 			int len = 1;			// current number of bits in code 
@@ -459,17 +463,19 @@ namespace Utils {
 
 		#endregion
 
-		/*
-		 * Huffman code decoding tables.  count[1..MAXBITS] is the number of symbols of
-		 * each length, which for a canonical code are stepped through in order.
-		 * symbol[] are the symbol values in canonical order, where the number of
-		 * entries is the sum of the counts in count[].  The decoding process can be
-		 * seen in the function decode() below.
-		 */
+		/// <summary>
+		/// Huffman code decoding tables.  count[1..MAXBITS] is the number of symbols of
+		/// each length, which for a canonical code are stepped through in order.
+		/// symbol[] are the symbol values in canonical order, where the number of
+		/// entries is the sum of the counts in count[].  The decoding process can be
+		/// seen in the function decode() below.
+        /// </summary>
 		public class HuffmanTable
 		{
 
-			// bit lengths of literal codes 
+			/// <summary>
+			/// Bit lengths of literal codes.
+			/// </summary>
 			private static readonly byte[] LITERAL_BIT_LENGTHS = { 
 				11, 124, 8, 7, 28, 7, 188, 13, 76, 4, 10, 8, 12, 10, 12, 10, 8, 23, 8,
 				9, 7, 6, 7, 8, 7, 6, 55, 8, 23, 24, 12, 11, 7, 9, 11, 12, 6, 7, 22, 5,
@@ -479,12 +485,12 @@ namespace Utils {
 				44, 173};
 
 			/// <summary>
-			/// bit lengths of length codes 0..15
+			/// Bit lengths of length codes 0..15.
 			/// </summary> 
 			private static readonly byte[] LENGTH_BIT_LENGTHS = { 2, 35, 36, 53, 38, 23 };
 
 			/// <summary>
-			///  bit lengths of distance codes 0..63
+			/// Bit lengths of distance codes 0..63.
 			/// </summary>
 			private static readonly byte[] DISTANCE_BIT_LENGTHS = { 2, 20, 53, 230, 247, 151, 248 };
 
@@ -500,27 +506,27 @@ namespace Utils {
 				count = new short[MAX_BITS + 1];
 				symbol = new short[symbolSize];
 
-				construct(compacted);
+				Construct(compacted);
 			}
 
-			/*
-			 * Given a list of repeated code lengths rep[0..n-1], where each byte is a
-			 * count (high four bits + 1) and a code length (low four bits), generate the
-			 * list of code lengths.  This compaction reduces the size of the object code.
-			 * Then given the list of code lengths length[0..n-1] representing a canonical
-			 * Huffman code for n symbols, construct the tables required to decode those
-			 * codes.  Those tables are the number of codes of each length, and the symbols
-			 * sorted by length, retaining their original order within each length.  The
-			 * return value is zero for a complete code set, negative for an over-
-			 * subscribed code set, and positive for an incomplete code set.  The tables
-			 * can be used if the return value is zero or positive, but they cannot be used
-			 * if the return value is negative.  If the return value is zero, it is not
-			 * possible for decode() using that table to return an error--any stream of
-			 * enough bits will resolve to a symbol.  If the return value is positive, then
-			 * it is possible for decode() using that table to return an error for received
-			 * codes past the end of the incomplete lengths.
-			 */
-			private int construct(byte[] rep)
+			/// <summary>
+			/// Given a list of repeated code lengths rep[0..n-1], where each byte is a
+			/// count (high four bits + 1) and a code length (low four bits), generate the
+			/// list of code lengths.  This compaction reduces the size of the object code.
+			/// Then given the list of code lengths length[0..n-1] representing a canonical
+			/// Huffman code for n symbols, construct the tables required to decode those
+			/// codes.  Those tables are the number of codes of each length, and the symbols
+			/// sorted by length, retaining their original order within each length.  The
+			/// return value is zero for a complete code set, negative for an over-
+			/// subscribed code set, and positive for an incomplete code set.  The tables
+			/// can be used if the return value is zero or positive, but they cannot be used
+			/// if the return value is negative.  If the return value is zero, it is not
+			/// possible for decode() using that table to return an error -- any stream of
+			/// enough bits will resolve to a symbol.  If the return value is positive, then
+			/// it is possible for decode() using that table to return an error for received
+			/// codes past the end of the incomplete lengths.
+            /// </summary>
+			private int Construct(byte[] rep)
 			{
 				short symbol;// current symbol when stepping through length[] 
 				int len;// current length when stepping through h->count[] 
