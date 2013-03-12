@@ -11,9 +11,9 @@ namespace Blast
     /// </summary>
     public class HuffmanTable
     {
-        public static readonly HuffmanTable LITERAL_CODE = new HuffmanTable(256, LITERAL_BIT_LENGTHS);
-        public static readonly HuffmanTable LENGTH_CODE = new HuffmanTable(16, LENGTH_BIT_LENGTHS);
-        public static readonly HuffmanTable DISTANCE_CODE = new HuffmanTable(64, DISTANCE_BIT_LENGTHS);
+        public static readonly HuffmanTable LiteralCodeTable = new HuffmanTable(256, LITERAL_BIT_LENGTHS);
+        public static readonly HuffmanTable LengthCodeTable = new HuffmanTable(16, LENGTH_BIT_LENGTHS);
+        public static readonly HuffmanTable DistanceCodeTable = new HuffmanTable(64, DISTANCE_BIT_LENGTHS);
 
         /// <summary>
         /// Bit lengths of literal codes.

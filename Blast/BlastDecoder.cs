@@ -203,7 +203,7 @@ namespace Blast
 					{ // 0 == literal, 1 == length+distance
 
 						// decode length 
-						decodedSymbol = Decode(HuffmanTable.LENGTH_CODE);
+						decodedSymbol = Decode(HuffmanTable.LengthCodeTable);
 						copyLength = LENGTH_CODE_BASE[decodedSymbol] + GetBits(LENGTH_CODE_EXTRA[decodedSymbol]);
 
 						if (copyLength == END_OF_STREAM) // sentinel value
@@ -215,7 +215,7 @@ namespace Blast
 
 						// decode distance 
 						decodedSymbol = copyLength == 2 ? 2 : dictSize;
-						copyDist = Decode(HuffmanTable.DISTANCE_CODE) << decodedSymbol;
+						copyDist = Decode(HuffmanTable.DistanceCodeTable) << decodedSymbol;
 						copyDist += GetBits(decodedSymbol);
 						copyDist++;
 
@@ -248,7 +248,7 @@ namespace Blast
 					else
 					{
 						// get literal and write it 
-						decodedSymbol = codedLiteral != 0 ? Decode(HuffmanTable.LITERAL_CODE) : GetBits(8);
+						decodedSymbol = codedLiteral != 0 ? Decode(HuffmanTable.LiteralCodeTable) : GetBits(8);
 						WriteBuffer((byte)decodedSymbol);
 					}
 				} while (true);
@@ -288,8 +288,8 @@ namespace Blast
 		/// </summary>
 		private int Decode(HuffmanTable h)
 		{
-			int len = 1;			// current number of bits in code 
-			int code = 0;		   // len bits being decoded 
+			int len = 1;     // current number of bits in code 
+			int code = 0;   // len bits being decoded 
 			int first = 0;		  // first code of length len 
 			int count;		  // number of codes of length len 
 			int index = 0;		  // index of first code of length len in symbol table 
