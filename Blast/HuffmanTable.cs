@@ -50,7 +50,6 @@ namespace Blast
                 151,
                 248
             };
-
         public readonly short[] count;
         public readonly short[] symbol;
 
@@ -66,11 +65,13 @@ namespace Blast
         /// Given a list of repeated code lengths rep[0..n-1], where each byte is a
         /// count (high four bits + 1) and a code length (low four bits), generate the
         /// list of code lengths.  This compaction reduces the size of the object code.
+        /// 
         /// Then given the list of code lengths length[0..n-1] representing a canonical
         /// Huffman code for n symbols, construct the tables required to decode those
         /// codes.  Those tables are the number of codes of each length, and the symbols
-        /// sorted by length, retaining their original order within each length.  The
-        /// return value is zero for a complete code set, negative for an over-
+        /// sorted by length, retaining their original order within each length.  
+        /// 
+        /// The return value is zero for a complete code set, negative for an over-
         /// subscribed code set, and positive for an incomplete code set.  The tables
         /// can be used if the return value is zero or positive, but they cannot be used
         /// if the return value is negative.  If the return value is zero, it is not
@@ -93,24 +94,24 @@ namespace Blast
             symbol = 0;
             for (int ri = 0; ri < rep.Length; ri++)
             {
-                len = rep [ri];
+                len = rep[ri];
                 left = (len >> 4) + 1;
                 len &= 0xf;
                 do
                 {
-                    length [symbol++] = (short)len;
+                    length[symbol++] = (short)len;
                 } while (--left > 0);
             }
 
             // count number of codes of each length 
             n = symbol;
             for (len = 0; len <= BlastDecoder.MAX_BITS; len++)
-                this.count [len] = 0;
+                this.count[len] = 0;
 
             for (symbol = 0; symbol < n; symbol++)
-                (this.count [length [symbol]])++;// assumes lengths are within bounds 
+                (this.count[length[symbol]])++;// assumes lengths are within bounds 
 
-            if (this.count [0] == n)
+            if (this.count[0] == n)
             {// no codes!
                 return 0;   // complete, but decode() will fail 
             }
@@ -120,17 +121,17 @@ namespace Blast
             for (len = 1; len <= BlastDecoder.MAX_BITS; len++)
             {
                 left <<= 1; // one more bit, double codes left 
-                left -= this.count [len]; // deduct count from possible codes 
+                left -= this.count[len]; // deduct count from possible codes 
                 if (left < 0)
                     return left; // over-subscribed--return negative 
             } // left > 0 means incomplete 
 
             // generate offsets into symbol table for each length for sorting 
-            offs [1] = 0;
+            offs[1] = 0;
 
             for (len = 1; len < BlastDecoder.MAX_BITS; len++)
             {
-                offs [len + 1] = (short)(offs [len] + this.count [len]);
+                offs[len + 1] = (short)(offs[len] + this.count[len]);
             }
 
             // 
@@ -139,9 +140,9 @@ namespace Blast
             // 
             for (symbol = 0; symbol < n; symbol++)
             {
-                if (length [symbol] != 0)
+                if (length[symbol] != 0)
                 {
-                    this.symbol [offs [length [symbol]]++] = symbol;
+                    this.symbol[offs[length[symbol]]++] = symbol;
                 }
             }
 
