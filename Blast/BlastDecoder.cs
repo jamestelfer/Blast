@@ -46,9 +46,9 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace Utils 
+namespace Blast 
 {
-	public class Blast
+	public class BlastDecoder
 	{
 		public const int MAX_BITS = 13;
 		public const int MAX_WIN = 4096;
@@ -112,7 +112,7 @@ namespace Utils
 		/// <para>At the bottom of blast.c is an example program that uses blast() that can be
 		/// compiled to produce a command-line decompression filter by defining TEST.</para>
 		/// </summary>
-		public Blast(Stream inputStream, Stream outputStream)
+		public BlastDecoder(Stream inputStream, Stream outputStream)
 		{
 			this._inputStream = inputStream;
             this._outputStream = outputStream;

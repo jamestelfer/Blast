@@ -11,6 +11,10 @@ namespace Blast
     /// </summary>
     public class HuffmanTable
     {
+        public static readonly HuffmanTable LITERAL_CODE = new HuffmanTable(256, LITERAL_BIT_LENGTHS);
+        public static readonly HuffmanTable LENGTH_CODE = new HuffmanTable(16, LENGTH_BIT_LENGTHS);
+        public static readonly HuffmanTable DISTANCE_CODE = new HuffmanTable(64, DISTANCE_BIT_LENGTHS);
+
         /// <summary>
         /// Bit lengths of literal codes.
         /// </summary>
@@ -46,15 +50,13 @@ namespace Blast
                 151,
                 248
             };
-        public static readonly HuffmanTable LITERAL_CODE = new HuffmanTable(256, LITERAL_BIT_LENGTHS);
-        public static readonly HuffmanTable LENGTH_CODE = new HuffmanTable(16, LENGTH_BIT_LENGTHS);
-        public static readonly HuffmanTable DISTANCE_CODE = new HuffmanTable(64, DISTANCE_BIT_LENGTHS);
+
         public readonly short[] count;
         public readonly short[] symbol;
 
         public HuffmanTable(int symbolSize, byte[] compacted)
         {
-            count = new short[MAX_BITS + 1];
+            count = new short[BlastDecoder.MAX_BITS + 1];
             symbol = new short[symbolSize];
 
             Construct(compacted);
@@ -82,7 +84,7 @@ namespace Blast
             short symbol;// current symbol when stepping through length[] 
             int len;// current length when stepping through h->count[] 
             int left;// number of possible codes left of current length 
-            short[] offs = new short[MAX_BITS + 1]; // offsets in symbol table for each length 
+            short[] offs = new short[BlastDecoder.MAX_BITS + 1]; // offsets in symbol table for each length 
             short[] length = new short[256]; // code lengths 
 
             int n;
@@ -102,7 +104,7 @@ namespace Blast
 
             // count number of codes of each length 
             n = symbol;
-            for (len = 0; len <= MAX_BITS; len++)
+            for (len = 0; len <= BlastDecoder.MAX_BITS; len++)
                 this.count [len] = 0;
 
             for (symbol = 0; symbol < n; symbol++)
@@ -115,7 +117,7 @@ namespace Blast
 
             // check for an over-subscribed or incomplete set of lengths 
             left = 1; // one possible code of zero length 
-            for (len = 1; len <= MAX_BITS; len++)
+            for (len = 1; len <= BlastDecoder.MAX_BITS; len++)
             {
                 left <<= 1; // one more bit, double codes left 
                 left -= this.count [len]; // deduct count from possible codes 
@@ -126,7 +128,7 @@ namespace Blast
             // generate offsets into symbol table for each length for sorting 
             offs [1] = 0;
 
-            for (len = 1; len < MAX_BITS; len++)
+            for (len = 1; len < BlastDecoder.MAX_BITS; len++)
             {
                 offs [len + 1] = (short)(offs [len] + this.count [len]);
             }
