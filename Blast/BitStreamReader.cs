@@ -54,8 +54,16 @@ namespace Blast
             _bitBufferCount = 0;
         }
 
+        /// <summary>
+        /// Get the next whole byte from the input stream. Ignores the current bit buffer.
+        /// </summary>
+        /// <returns>
+        /// The byte.
+        /// </returns>
         public byte ConsumeByte()
         {
+            // FIXME since this ignores the bit buffer it's probably not good to expose
+
             if (_inputBufferRemaining == 0)
             {
                 DoReadBuffer();
@@ -82,7 +90,7 @@ namespace Blast
         /// Check for presence of more input without consuming it.
         /// May refill the input buffer.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>True if there is more input to read.</returns>
         public bool HasInput()
         {
             // is there any input in the buffer?
