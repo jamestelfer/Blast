@@ -6,10 +6,10 @@ using System.IO;
 using System.Text;
 using System.Collections.Generic;
 using System.Linq;
-using Utils;
+using Blast;
 using Xunit;
 
-namespace BlastTests {
+namespace Blast.Test {
 
     public class BlastTest {
 
@@ -22,7 +22,7 @@ namespace BlastTests {
             var outp = new MemoryStream();
 
             // test
-            var b = new Blast(new MemoryStream(input, writable: false), outp);
+            var b = new BlastDecoder(new MemoryStream(input, writable: false), outp);
             b.Decompress();
             Console.WriteLine(Encoding.ASCII.GetString(outp.ToArray()));
 
@@ -41,7 +41,7 @@ namespace BlastTests {
 			{
 
 				// test
-				var b = new Blast(input, output);
+				var b = new BlastDecoder(input, output);
 				b.Decompress();
 			}
 
@@ -60,7 +60,7 @@ namespace BlastTests {
 			{
 
 				// test
-				var b = new Blast(input, output);
+				var b = new BlastDecoder(input, output);
 				b.Decompress();
 			}
 
@@ -81,7 +81,7 @@ namespace BlastTests {
 			{
 
 				// test
-				var b = new Blast(input, output);
+				var b = new BlastDecoder(input, output);
 				b.Decompress();
 			}
 
