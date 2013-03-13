@@ -68,14 +68,7 @@ namespace Blast
 		//
 		// state variables
 		//
-		private Stream _inputStream;
-		private byte[] _inputBuffer = new byte[16384];
-		private int _inputBufferPos = 0;
-		private int _inputBufferRemaining = 0; // available input in buffer
-
-		private int _bitBuffer = 0; // bit buffer 
-		private int _bitBufferCount = 0; // number of bits in bit buffer 
-
+        private BitStreamReader _input;
         private Stream _outputStream;
 		private byte[] _outputBuffer = new byte[MAX_WIN * 2]; // output buffer and sliding window 
         private int _outputBufferPos = 0; // index of next write location in _outputBuffer[] 
@@ -114,7 +107,7 @@ namespace Blast
 		/// </summary>
 		public BlastDecoder(Stream inputStream, Stream outputStream)
 		{
-			this._inputStream = inputStream;
+			this._input = new BitStreamReader(inputStream);
             this._outputStream = outputStream;
 		}
 
@@ -127,7 +120,7 @@ namespace Blast
 			{
 				// some files are composed of multiple compressed streams
 				DecompressStream();
-			} while (IsInputRemaining());
+			} while (_input.HasInput());
 		}
 
 		/// <summary>
@@ -170,23 +163,23 @@ namespace Blast
 		/// </summary>
 		private void DecompressStream()
 		{
-			int codedLiteral; // true if literals are coded 
-			int dictSize;		   // log2(dictionary size) - 6 
-			int decodedSymbol;		 // decoded symbol, extra bits for distance 
-			int copyLength;			// length for copy 
-			int copyDist;		   // distance for copy 
-			int copyCount;		   // copy counter 
+			int codedLiteral;  // true if literals are coded 
+			int dictSize;      // log2(dictionary size) - 6 
+			int decodedSymbol; // decoded symbol, extra bits for distance 
+			int copyLength;    // length for copy 
+			int copyDist;      // distance for copy 
+			int copyCount;     // copy counter 
 
 			int fromIndex;
 
 			// read header (start of compressed stream)
-			codedLiteral = GetBits(8);
+			codedLiteral = _input.GetBits(8);
 			if (codedLiteral > 1)
 			{
 				throw new BlastException(BlastException.LiteralFlagMessage);
 			}
 
-			dictSize = GetBits(8);
+			dictSize = _input.GetBits(8);
 
 			if (dictSize < 4 || dictSize > 6)
 			{
@@ -199,12 +192,12 @@ namespace Blast
 				// decode literals and length/distance pairs 
 				do
 				{
-					if (GetBits(1) > 0)
+					if (_input.GetBits(1) > 0)
 					{ // 0 == literal, 1 == length+distance
 
 						// decode length 
 						decodedSymbol = Decode(HuffmanTable.LengthCodeTable);
-						copyLength = LENGTH_CODE_BASE[decodedSymbol] + GetBits(LENGTH_CODE_EXTRA[decodedSymbol]);
+						copyLength = LENGTH_CODE_BASE[decodedSymbol] + _input.GetBits(LENGTH_CODE_EXTRA[decodedSymbol]);
 
 						if (copyLength == END_OF_STREAM) // sentinel value
 						{
@@ -216,7 +209,7 @@ namespace Blast
 						// decode distance 
 						decodedSymbol = copyLength == 2 ? 2 : dictSize;
 						copyDist = Decode(HuffmanTable.DistanceCodeTable) << decodedSymbol;
-						copyDist += GetBits(decodedSymbol);
+						copyDist += _input.GetBits(decodedSymbol);
 						copyDist++;
 
                         // malformed input - you can't go back that far
@@ -248,7 +241,7 @@ namespace Blast
 					else
 					{
 						// get literal and write it 
-						decodedSymbol = codedLiteral != 0 ? Decode(HuffmanTable.LiteralCodeTable) : GetBits(8);
+						decodedSymbol = codedLiteral != 0 ? Decode(HuffmanTable.LiteralCodeTable) : _input.GetBits(8);
 						WriteBuffer((byte)decodedSymbol);
 					}
 				} while (true);
@@ -257,7 +250,7 @@ namespace Blast
 			{
 				// write remaining bytes
 				FlushOutputBuffer();
-				FlushBits();
+				_input.Flush();
 			}
 		}
 
@@ -288,17 +281,17 @@ namespace Blast
 		/// </summary>
 		private int Decode(HuffmanTable h)
 		{
-			int len = 1;     // current number of bits in code 
-			int code = 0;   // len bits being decoded 
-			int first = 0;		  // first code of length len 
-			int count;		  // number of codes of length len 
-			int index = 0;		  // index of first code of length len in symbol table 
-			int bitbuf;		 // bits from stream 
-			int left;		   // bits left in next or left to process 
-			int next = 1;		   // next number of codes 
+			int codeBitCount = 1; // current number of bits in code 
+            int code = 0;         // codeBitCount bits being decoded 
+			int first = 0;        // first code of length codeBitCount 
+			int count;            // number of codes of length codeBitCount 
+			int index = 0;        // index of first code of length codeBitCount in symbol table 
+			int bitbuf;           // bits from stream 
+			int left;             // bits left in next or left to process 
+			int next = 1;         // next number of codes 
 
-			bitbuf = _bitBuffer;
-			left = _bitBufferCount;
+			bitbuf = _input._bitBuffer;
+			left = _input._bitBufferCount;
 
 			while (true)
 			{
@@ -309,99 +302,30 @@ namespace Blast
 					count = h.count[next++];
 					if (code < first + count)
 					{
-						_bitBuffer = bitbuf;
-						_bitBufferCount = (_bitBufferCount - len) & 7;
+						_input._bitBuffer = bitbuf;
+						_input._bitBufferCount = (_input._bitBufferCount - codeBitCount) & 7;
 
 						return h.symbol[index + (code - first)];
 					}
+
 					index += count;
 					first += count;
 					first <<= 1;
 					code <<= 1;
-					len++;
+					codeBitCount++;
 				}
-				left = (MAX_BITS + 1) - len;
+				left = (MAX_BITS + 1) - codeBitCount;
 
 				if (left == 0)
 					break;
 
-				bitbuf = ConsumeByte();
+				bitbuf = _input.ConsumeByte();
 				if (left > 8)
 					left = 8;
 			}
 
 			return -9;
 		}
-
-		#region Input stream
-
-		private int GetBits(int need)
-		{
-			int val = _bitBuffer;
-
-			while (_bitBufferCount < need)
-			{
-				val |= ((int)ConsumeByte()) << _bitBufferCount;
-				_bitBufferCount += 8;
-			}
-
-			_bitBuffer = val >> need;
-			_bitBufferCount -= need;
-
-			return val & ((1 << need) - 1);
-		}
-
-		private void FlushBits()
-		{
-			_bitBufferCount = 0;
-		}
-
-		private byte ConsumeByte()
-		{
-			if (_inputBufferRemaining == 0)
-			{
-				DoReadBuffer();
-
-				if (_inputBufferRemaining == 0)
-				{
-					throw new BlastException(BlastException.OutOfInputMessage);
-				}
-			}
-
-			byte b = _inputBuffer[_inputBufferPos++];
-			_inputBufferRemaining--;
-
-			return b;
-		}
-
-		private void DoReadBuffer()
-		{
-			_inputBufferRemaining = _inputStream.Read(_inputBuffer, 0, _inputBuffer.Length);
-			_inputBufferPos = 0;
-		}
-
-		/// <summary>
-		/// Check for presence of more input without consuming it.
-		/// May refill the input buffer.
-		/// </summary>
-		/// <returns></returns>
-		private bool IsInputRemaining()
-		{
-			// is there any input in the buffer?
-			if (_inputBufferRemaining > 0)
-			{
-				return true;
-			}
-
-			// try to fill it if not
-			DoReadBuffer();
-
-			// true if input now available
-			return _inputBufferRemaining > 0;
-		}
-
-
-		#endregion
 
 		#region Output stream
 
