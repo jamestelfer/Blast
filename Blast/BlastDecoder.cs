@@ -279,7 +279,7 @@ namespace Blast
 		///   more "natural" ordering starting with all zeros and incrementing.</item>
         /// </list>
 		/// </summary>
-		private int Decode(HuffmanTable h)
+		private int Decode(HuffmanTable huffTable)
 		{
 			int codeBitCount = 1; // current number of bits in code 
             int code = 0;         // codeBitCount bits being decoded 
@@ -297,15 +297,22 @@ namespace Blast
 			{
 				while (left-- > 0)
 				{
+                    // code = code OR (the complement of the LSB in the bit buffer)
 					code |= (bitbuf & 1) ^ 1;
+
+                    // shift the LSB off the bit buffer
 					bitbuf >>= 1;
-					count = h.count[next++];
-					if (code < first + count)
+
+                    // grab the 'count' out of the huffman table
+					count = huffTable.count[next++];
+					
+                    // ??
+                    if (code < first + count)
 					{
 						_input._bitBuffer = bitbuf;
 						_input._bitBufferCount = (_input._bitBufferCount - codeBitCount) & 7;
 
-						return h.symbol[index + (code - first)];
+						return huffTable.symbol[index + (code - first)];
 					}
 
 					index += count;
