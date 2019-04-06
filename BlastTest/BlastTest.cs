@@ -6,15 +6,14 @@ using System.IO;
 using System.Text;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Utils;
+using Xunit;
 
 namespace BlastTests {
 
-    [TestClass]
     public class BlastTest {
 
-        [TestMethod]
+        [Fact]
         public void basic_decompression_from_example() {
             // setup
             byte[] input = { 0x00, 0x04, 0x82, 0x24, 0x25, 0x8f, 0x80, 0x7f };
@@ -28,10 +27,10 @@ namespace BlastTests {
             Console.WriteLine(Encoding.ASCII.GetString(outp.ToArray()));
 
             // assert
-            CollectionAssert.AreEqual(expected, outp.ToArray());
+            Assert.Equal(expected, outp.ToArray());
         }
 
-		[TestMethod]
+		[Fact]
 		public void decompress_text_file()
 		{
 			// setup
@@ -49,7 +48,7 @@ namespace BlastTests {
 			// assert
 		}
 
-		[TestMethod]
+		[Fact]
 		public void decompress_large_text_file()
 		{
 			// setup
@@ -69,7 +68,7 @@ namespace BlastTests {
             AssertFile(Path.Combine(baseFolder, "large.log"), resultFile);
         }
 
-		[TestMethod]
+		[Fact]
 		public void decompress_binary_file()
 		{
 			// setup
@@ -92,25 +91,41 @@ namespace BlastTests {
 
         private void AssertFile(string expectedFileResult, string actualFileResult)
         {
-            Assert.IsTrue(File.Exists(expectedFileResult), "Expected file result must exist");
-            Assert.IsTrue(File.Exists(actualFileResult), "Actual file result must exist");
+            Assert.True(File.Exists(expectedFileResult), "Expected file result must exist");
+            Assert.True(File.Exists(actualFileResult), "Actual file result must exist");
 
             var exp = new FileInfo(expectedFileResult);
             var act = new FileInfo(actualFileResult);
             
-            Assert.AreEqual(exp.Length, act.Length, "File sizes must match");
+            Assert.Equal(exp.Length, act.Length);
 
             using (var expStream = new FileStream(expectedFileResult, FileMode.Open, FileAccess.Read))
             using (var actStream = new FileStream(actualFileResult, FileMode.Open, FileAccess.Read))
             {
-                Assert.IsTrue(StreamsContentsAreEqual(expStream, actStream), "Files differ");
+                Assert.True(StreamsContentsAreEqual(expStream, actStream), "Files differ");
             }
         }
 
 		private static string GetTestFileFolder()
-		{
+        {
             var projDir = Directory.GetParent(System.Reflection.Assembly.GetExecutingAssembly().Location).Parent.Parent.FullName;
-            return Path.Combine(projDir, "test-files");
+            var candidate = Path.Combine(projDir, "test-files");
+
+            if (!Directory.Exists(candidate))
+            {
+                candidate =
+                    Path.Combine(projDir, "../test-files");
+            }
+
+            if (!Directory.Exists(candidate))
+            {
+                candidate =
+                    Path.Combine(Environment.CurrentDirectory, "test-files");
+            }
+
+            Assert.True(Directory.Exists(candidate), $"Input file location must exist relative to '{projDir}' or '{Environment.CurrentDirectory}'");
+
+            return candidate;
         }
 
         // http://stackoverflow.com/questions/968935/c-sharp-binary-file-compare
