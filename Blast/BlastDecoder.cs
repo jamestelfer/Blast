@@ -295,10 +295,14 @@ namespace Blast
 
 			while (true)
 			{
+                // while there are bits left in the bit buffer
 				while (left-- > 0)
 				{
                     // code = code OR (the complement of the LSB in the bit buffer)
+                    // this is the bit reversal mentioned above
 					code |= (bitbuf & 1) ^ 1;
+
+                    Console.WriteLine("bitbuf={0} code={1} {2:x}", ToBitString(bitbuf), ToBitString(code), code);
 
                     // shift the LSB off the bit buffer
 					bitbuf >>= 1;
@@ -309,6 +313,7 @@ namespace Blast
                     // ??
                     if (code < first + count)
 					{
+                Console.WriteLine("-----done");
 						_input._bitBuffer = bitbuf;
 						_input._bitBufferCount = (_input._bitBufferCount - codeBitCount) & 7;
 
@@ -317,10 +322,13 @@ namespace Blast
 
 					index += count;
 					first += count;
+
 					first <<= 1;
 					code <<= 1;
-					codeBitCount++;
+					
+                    codeBitCount++;
 				}
+                Console.WriteLine("-----");
 				left = (MAX_BITS + 1) - codeBitCount;
 
 				if (left == 0)
@@ -383,5 +391,31 @@ namespace Blast
 
 		#endregion
 
+        /// <summary>
+        /// Output the least significant 8 bits as a series of 1 and 0 into a string.
+        /// </summary>
+        /// <returns>
+        /// The bit string representation.
+        /// </returns>
+        /// <param name='byteVal'>
+        /// The integer to treat as a byte.
+        /// </param>
+        private string ToBitString(int byteVal)
+        {
+            var b = new StringBuilder("--------------------------------");
+            int bitNum = 31;
+
+            while (bitNum >= 0)
+            {
+                int bitVal = (byteVal >> bitNum) & 0x1;
+                //Console.WriteLine(b.Capacity);
+                //Console.WriteLine(bitNum);
+                b[bitNum] = bitVal == 1 ? '1' : '0';
+
+                bitNum--;
+            }
+
+            return b.ToString();
+        }
    }
 }
