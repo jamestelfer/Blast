@@ -2,7 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-
+    <LangVersion>8.0</LangVersion>
+    <Nullable>enable</Nullable>
     <PackageId>BlastDecompressor</PackageId>
     <Title>Blast Decompressor</Title>
     <Description>A port of the PkWare Blast compression algorithm based on the C implementation

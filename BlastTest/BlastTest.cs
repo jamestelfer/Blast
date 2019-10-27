@@ -30,7 +30,7 @@ namespace Blast.Test {
             Assert.Equal(expected, outp.ToArray());
         }
 
-		//[Fact]
+		[Fact]
 		public void decompress_text_file()
 		{
 			// setup
@@ -48,7 +48,7 @@ namespace Blast.Test {
 			// assert
 		}
 
-		//[Fact]
+		[Fact]
 		public void decompress_large_text_file()
 		{
 			// setup
@@ -68,7 +68,7 @@ namespace Blast.Test {
             AssertFile(Path.Combine(baseFolder, "large.log"), resultFile);
         }
 
-		//[Fact]
+		[Fact]
 		public void decompress_binary_file()
 		{
 			// setup
@@ -79,7 +79,6 @@ namespace Blast.Test {
             using (var input = new FileStream(Path.Combine(baseFolder, "blast.msg.cmp"), FileMode.Open, FileAccess.Read))
 			using (var output = new FileStream(resultFile, FileMode.Create, FileAccess.Write))
 			{
-
 				// test
 				var b = new BlastDecoder(input, output);
 				b.Decompress();
