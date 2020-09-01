@@ -11,154 +11,140 @@ using Xunit;
 
 namespace BlastTests {
 
-    public class BlastTest {
+	public class BlastTest {
 
-        [Fact]
-        public void basic_decompression_from_example() {
-            // setup
-            byte[] input = { 0x00, 0x04, 0x82, 0x24, 0x25, 0x8f, 0x80, 0x7f };
-            byte[] expected = Encoding.ASCII.GetBytes("AIAIAIAIAIAIA");
+		[Fact]
+		public void basic_decompression_from_example() {
+			// setup
+			byte[] input = { 0x00, 0x04, 0x82, 0x24, 0x25, 0x8f, 0x80, 0x7f };
+			byte[] expected = Encoding.ASCII.GetBytes("AIAIAIAIAIAIA");
 
-            var outp = new MemoryStream();
+			var outp = new MemoryStream();
 
-            // test
-            var b = new Blast(new MemoryStream(input, writable: false), outp);
-            b.Decompress();
-            Console.WriteLine(Encoding.ASCII.GetString(outp.ToArray()));
+			// test
+			var b = new Blast(new MemoryStream(input, writable: false), outp);
+			b.Decompress();
+			Console.WriteLine(Encoding.ASCII.GetString(outp.ToArray()));
 
-            // assert
-            Assert.Equal(expected, outp.ToArray());
-        }
+			// assert
+			Assert.Equal(expected, outp.ToArray());
+		}
 
-		//[Fact]
-		protected void decompress_text_file()
+		[Fact]
+		public void decompress_lorem_ipsum_short_text_file()
 		{
 			// setup
 			var baseFolder = GetTestFileFolder();
+			string sourceFile = Path.Combine(baseFolder,  "lorem-ipsum.short.txt.blast");
+			string outputFile = Path.Combine(baseFolder,  "lorem-ipsum.short.decomp.txt");
+			string compareFile = Path.Combine(baseFolder, "lorem-ipsum.short.txt");
 
-			using (var input = new FileStream(Path.Combine(baseFolder, "test.bin"), FileMode.Open, FileAccess.Read))
-			using (var output = new FileStream(Path.Combine(baseFolder, "test.decomp.log"), FileMode.Create, FileAccess.Write))
+
+			using (var input = new FileStream(sourceFile, FileMode.Open, FileAccess.Read))
+			using (var output = new FileStream(outputFile, FileMode.Create, FileAccess.Write))
 			{
-
 				// test
 				var b = new Blast(input, output);
 				b.Decompress();
 			}
 
 			// assert
+			AssertFile(compareFile, outputFile);
 		}
 
-		// [Fact]
-		protected void decompress_large_text_file()
+		[Fact]
+		public void decompress_license_text_file()
 		{
 			// setup
 			var baseFolder = GetTestFileFolder();
-            var resultFile = Path.Combine(baseFolder, "large.decomp.log");
+			string sourceFile = Path.Combine(baseFolder, "apache-license.html.blast");
+			string outputFile = Path.Combine(baseFolder, "apache-license.decomp.html");
+			string compareFile = Path.Combine(baseFolder, "apache-license.html");
 
-			using (var input = new FileStream(Path.Combine(baseFolder, "large.log.cmp"), FileMode.Open, FileAccess.Read))
-			using (var output = new FileStream(resultFile, FileMode.Create, FileAccess.Write))
+
+			using (var input = new FileStream(sourceFile, FileMode.Open, FileAccess.Read))
+			using (var output = new FileStream(outputFile, FileMode.Create, FileAccess.Write))
 			{
-
 				// test
 				var b = new Blast(input, output);
 				b.Decompress();
 			}
 
 			// assert
-            AssertFile(Path.Combine(baseFolder, "large.log"), resultFile);
-        }
-
-		// [Fact]
-		protected void decompress_binary_file()
-		{
-			// setup
-            var baseFolder = GetTestFileFolder();
-
-            var resultFile = Path.Combine(baseFolder, "blast.decomp.msg");
-
-            using (var input = new FileStream(Path.Combine(baseFolder, "blast.msg.cmp"), FileMode.Open, FileAccess.Read))
-			using (var output = new FileStream(resultFile, FileMode.Create, FileAccess.Write))
-			{
-
-				// test
-				var b = new Blast(input, output);
-				b.Decompress();
-			}
-
-			// assert
-            AssertFile(Path.Combine(baseFolder, "blast.msg"), resultFile);
+			AssertFile(compareFile, outputFile);
 		}
 
-        private void AssertFile(string expectedFileResult, string actualFileResult)
-        {
-            Assert.True(File.Exists(expectedFileResult), "Expected file result must exist");
-            Assert.True(File.Exists(actualFileResult), "Actual file result must exist");
 
-            var exp = new FileInfo(expectedFileResult);
-            var act = new FileInfo(actualFileResult);
+		private void AssertFile(string expectedFileResult, string actualFileResult)
+		{
+			Assert.True(File.Exists(expectedFileResult), "Expected file result must exist");
+			Assert.True(File.Exists(actualFileResult), "Actual file result must exist");
 
-            Assert.Equal(exp.Length, act.Length);
+			var exp = new FileInfo(expectedFileResult);
+			var act = new FileInfo(actualFileResult);
 
-            using (var expStream = new FileStream(expectedFileResult, FileMode.Open, FileAccess.Read))
-            using (var actStream = new FileStream(actualFileResult, FileMode.Open, FileAccess.Read))
-            {
-                Assert.True(StreamsContentsAreEqual(expStream, actStream), "Files differ");
-            }
-        }
+			Assert.Equal(exp.Length, act.Length);
+
+			using (var expStream = new FileStream(expectedFileResult, FileMode.Open, FileAccess.Read))
+			using (var actStream = new FileStream(actualFileResult, FileMode.Open, FileAccess.Read))
+			{
+				Assert.True(StreamsContentsAreEqual(expStream, actStream), "Files differ");
+			}
+		}
 
 		private static string GetTestFileFolder()
-        {
-            var projDir = Directory.GetParent(System.Reflection.Assembly.GetExecutingAssembly().Location).Parent.Parent.FullName;
-            var candidate = Path.Combine(projDir, "test-files");
+		{
+			var projDir = Directory.GetParent(System.Reflection.Assembly.GetExecutingAssembly().Location).Parent.Parent.FullName;
+			var candidate = Path.Combine(projDir, "test-files");
 
-            if (!Directory.Exists(candidate))
-            {
-                candidate =
-                    Path.Combine(projDir, "../test-files");
-            }
+			if (!Directory.Exists(candidate))
+			{
+				candidate =
+					Path.Combine(projDir, "../test-files");
+			}
 
-            if (!Directory.Exists(candidate))
-            {
-                candidate =
-                    Path.Combine(Environment.CurrentDirectory, "test-files");
-            }
+			if (!Directory.Exists(candidate))
+			{
+				candidate =
+					Path.Combine(Environment.CurrentDirectory, "test-files");
+			}
 
-            Assert.True(Directory.Exists(candidate), $"Input file location must exist relative to '{projDir}' or '{Environment.CurrentDirectory}'");
+			Assert.True(Directory.Exists(candidate), $"Input file location must exist relative to '{projDir}' or '{Environment.CurrentDirectory}'");
 
-            return candidate;
-        }
+			return candidate;
+		}
 
-        // http://stackoverflow.com/questions/968935/c-sharp-binary-file-compare
-        private static bool StreamsContentsAreEqual(Stream stream1, Stream stream2)
-        {
-            const int bufferSize = 2048 * 2;
-            var buffer1 = new byte[bufferSize];
-            var buffer2 = new byte[bufferSize];
+		// http://stackoverflow.com/questions/968935/c-sharp-binary-file-compare
+		private static bool StreamsContentsAreEqual(Stream stream1, Stream stream2)
+		{
+			const int bufferSize = 2048 * 2;
+			var buffer1 = new byte[bufferSize];
+			var buffer2 = new byte[bufferSize];
 
-            while (true)
-            {
-                int count1 = stream1.Read(buffer1, 0, bufferSize);
-                int count2 = stream2.Read(buffer2, 0, bufferSize);
+			while (true)
+			{
+				int count1 = stream1.Read(buffer1, 0, bufferSize);
+				int count2 = stream2.Read(buffer2, 0, bufferSize);
 
-                if (count1 != count2)
-                {
-                    return false;
-                }
+				if (count1 != count2)
+				{
+					return false;
+				}
 
-                if (count1 == 0)
-                {
-                    return true;
-                }
+				if (count1 == 0)
+				{
+					return true;
+				}
 
-                int iterations = (int)Math.Ceiling((double)count1 / sizeof(Int64));
-                for (int i = 0; i < iterations; i++)
-                {
-                    if (BitConverter.ToInt64(buffer1, i * sizeof(Int64)) != BitConverter.ToInt64(buffer2, i * sizeof(Int64)))
-                    {
-                        return false;
-                    }
-                }
-            }
-        }
-    }
+				int iterations = (int)Math.Ceiling((double)count1 / sizeof(Int64));
+				for (int i = 0; i < iterations; i++)
+				{
+					if (BitConverter.ToInt64(buffer1, i * sizeof(Int64)) != BitConverter.ToInt64(buffer2, i * sizeof(Int64)))
+					{
+						return false;
+					}
+				}
+			}
+		}
+	}
 }
