@@ -31,6 +31,28 @@ namespace BlastTests {
 		}
 
 		[Fact]
+		public void decompress_log_file()
+		{
+			// setup
+			var baseFolder = GetTestFileFolder();
+			string sourceFile = Path.Combine(baseFolder,  "test.log.blast");
+			string outputFile = Path.Combine(baseFolder,  "test.decomp.log");
+			string compareFile = Path.Combine(baseFolder, "test.log");
+
+
+			using (var input = new FileStream(sourceFile, FileMode.Open, FileAccess.Read))
+			using (var output = new FileStream(outputFile, FileMode.Create, FileAccess.Write))
+			{
+				// test
+				var b = new Blast(input, output);
+				b.Decompress();
+			}
+
+			// assert
+			AssertFile(compareFile, outputFile);
+		}
+
+		[Fact]
 		public void decompress_lorem_ipsum_short_text_file()
 		{
 			// setup

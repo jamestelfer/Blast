@@ -1,0 +1,81 @@
+[02/04/2012 07:06:01 PM (G, 0)] ************************************************************
+[02/04/2012 07:06:01 PM (G, 0)] Program version is 'netDeploy Uploader 5.6.2'
+[02/04/2012 07:06:01 PM (G, 0)] Program path is 'C:\WINNT\system32'
+[02/04/2012 07:06:01 PM (G, 0)] Program build number is 'win32-5.7015'
+[02/04/2012 07:06:01 PM (G, 0)] Program command line is '-t Machine -r "Log"'
+[02/04/2012 07:06:01 PM (G, 0)] Uploader preferences have been loaded
+[02/04/2012 07:06:01 PM (G, 0)] Performing upload via the Uploader DLL
+[02/04/2012 07:06:01 PM (G, 0)] ************************************************************
+[02/04/2012 07:06:01 PM (G, 0)] Uploader started
+[02/04/2012 07:06:01 PM (G, 0)] Upload directory is 'C:\Documents and Settings\All Users\Application Data\Open Software Associates\netDeploy\Common\Uploads\Logs'
+[02/04/2012 07:06:01 PM (G, 0)] Will attempt to upload file(s) '*.log'
+[02/04/2012 07:06:01 PM (G, 0)] Upload rule is 'Log'
+[02/04/2012 07:06:01 PM (G, 0)] Upload directory is 'C:\Documents and Settings\All Users\Application Data\Open Software Associates\netDeploy\Common\Uploads\Logs'
+[02/04/2012 07:06:01 PM (G, 0)] Will attempt to upload file(s) '*.log.gz'
+[02/04/2012 07:06:01 PM (G, 0)] Upload rule is 'Log'
+[02/04/2012 07:06:01 PM (G, 0)] Uploader finished
+[02/04/2012 07:06:01 PM (G, 0)] ************************************************************
+[02/04/2012 07:06:01 PM (G, 0)] Program exited successfully
+[02/04/2012 07:06:01 PM (G, 0)] ************************************************************
+[Monday, 2 April 2012 7:31:32 PM (G, 0)] ************************************************************
+[Monday, 2 April 2012 7:31:32 PM (G, 0)] Uploader started
+[Monday, 2 April 2012 7:31:33 PM (G, 0)] Upload directory is 'C:\Documents and Settings\All Users\Application Data\Open Software Associates\netDeploy\Common\Uploads\Logs'
+[Monday, 2 April 2012 7:31:33 PM (G, 0)] Will attempt to upload file(s) '*.log'
+[Monday, 2 April 2012 7:31:33 PM (G, 0)] Upload rule is 'Log'
+[Monday, 2 April 2012 7:31:33 PM (G, 0)] Uploading file 'w5c260a878443 at 20120402T193132_{1458437B-C206-461C-8A15-DA62E319B5EA}.log' to 'file:////MSWAU182FRM010/ManageSoftRL$/Logs'
+[Monday, 2 April 2012 7:31:33 PM (G, 0)] Upload username is ''
+[Monday, 2 April 2012 7:31:33 PM (G, 0)] Upload proxy is ''
+[Monday, 2 April 2012 7:31:37 PM (G, 0)] File 'w5c260a878443 at 20120402T193132_{1458437B-C206-461C-8A15-DA62E319B5EA}.log' removed from upload directory
+[Monday, 2 April 2012 7:31:37 PM (G, 0)] Upload successful
+[Monday, 2 April 2012 7:31:37 PM (G, 0)] Uploader finished
+[Monday, 2 April 2012 7:31:37 PM (G, 0)] ************************************************************
+[03/04/2012 01:13:51 AM (G, 0)] ************************************************************
+[03/04/2012 01:13:51 AM (G, 0)] Program version is 'netDeploy Uploader 5.6.2'
+[03/04/2012 01:13:51 AM (G, 0)] Program path is 'C:\WINNT\system32'
+[03/04/2012 01:13:51 AM (G, 0)] Program build number is 'win32-5.7015'
+[03/04/2012 01:13:51 AM (G, 0)] Program command line is '-t Machine -r "Log"'
+[03/04/2012 01:13:51 AM (G, 0)] Uploader preferences have been loaded
+[03/04/2012 01:13:51 AM (G, 0)] Performing upload via the Uploader DLL
+[03/04/2012 01:13:51 AM (G, 0)] ************************************************************
+[03/04/2012 01:13:51 AM (G, 0)] Uploader started
+[03/04/2012 01:13:51 AM (G, 0)] Upload directory is 'C:\Documents and Settings\All Users\Application Data\Open Software Associates\netDeploy\Common\Uploads\Logs'
+[03/04/2012 01:13:51 AM (G, 0)] Will attempt to upload file(s) '*.log'
+[03/04/2012 01:13:51 AM (G, 0)] Upload rule is 'Log'
+[03/04/2012 01:13:51 AM (G, 0)] Upload directory is 'C:\Documents and Settings\All Users\Application Data\Open Software Associates\netDeploy\Common\Uploads\Logs'
+[03/04/2012 01:13:51 AM (G, 0)] Will attempt to upload file(s) '*.log.gz'
+[03/04/2012 01:13:51 AM (G, 0)] Upload rule is 'Log'
+[03/04/2012 01:13:51 AM (G, 0)] Uploader finished
+[03/04/2012 01:13:51 AM (G, 0)] ************************************************************
+[03/04/2012 01:13:51 AM (G, 0)] Program exited successfully
+[03/04/2012 01:13:51 AM (G, 0)] ************************************************************
+[03/04/2012 07:21:33 AM (G, 0)] ************************************************************
+[03/04/2012 07:21:33 AM (G, 0)] Program version is 'netDeploy Uploader 5.6.2'
+[03/04/2012 07:21:33 AM (G, 0)] Program path is 'C:\WINNT\system32'
+[03/04/2012 07:21:33 AM (G, 0)] Program build number is 'win32-5.7015'
+[03/04/2012 07:21:33 AM (G, 0)] Program command line is '-t Machine -r "Log"'
+[03/04/2012 07:21:33 AM (G, 0)] Uploader preferences have been loaded
+[03/04/2012 07:21:33 AM (G, 0)] Performing upload via the Uploader DLL
+[03/04/2012 07:21:34 AM (G, 0)] ************************************************************
+[03/04/2012 07:21:34 AM (G, 0)] Uploader started
+[Tuesday, 3 April 2012 7:21:40 AM (G, 0)] ************************************************************
+[Tuesday, 3 April 2012 7:21:40 AM (G, 0)] Uploader started
+[03/04/2012 07:21:41 AM (G, 0)] Upload directory is 'C:\Documents and Settings\All Users\Application Data\Open Software Associates\netDeploy\Common\Uploads\Logs'
+[03/04/2012 07:21:41 AM (G, 0)] Will attempt to upload file(s) '*.log'
+[03/04/2012 07:21:41 AM (G, 0)] Upload rule is 'Log'
+[03/04/2012 07:21:41 AM (G, 0)] Upload directory is 'C:\Documents and Settings\All Users\Application Data\Open Software Associates\netDeploy\Common\Uploads\Logs'
+[03/04/2012 07:21:41 AM (G, 0)] Will attempt to upload file(s) '*.log.gz'
+[03/04/2012 07:21:41 AM (G, 0)] Upload rule is 'Log'
+[03/04/2012 07:21:41 AM (G, 0)] Uploader finished
+[03/04/2012 07:21:41 AM (G, 0)] ************************************************************
+[03/04/2012 07:21:41 AM (G, 0)] Program exited successfully
+[03/04/2012 07:21:41 AM (G, 0)] ************************************************************
+[Tuesday, 3 April 2012 7:21:44 AM (G, 0)] Upload directory is 'C:\Documents and Settings\All Users\Application Data\Open Software Associates\netDeploy\Common\Uploads\Inventories'
+[Tuesday, 3 April 2012 7:21:44 AM (G, 0)] Will attempt to upload file(s) '*.gz'
+[Tuesday, 3 April 2012 7:21:44 AM (G, 0)] Upload rule is 'Inventory'
+[Tuesday, 3 April 2012 7:21:44 AM (G, 0)] Uploading file 'w5c260a878443.ndi.gz' to 'file:////MSWAU182FRM010/ManageSoftRL$/Inventories'
+[Tuesday, 3 April 2012 7:21:44 AM (G, 0)] Upload username is ''
+[Tuesday, 3 April 2012 7:21:44 AM (G, 0)] Upload proxy is ''
+[Tuesday, 3 April 2012 7:21:57 AM (G, 0)] File 'w5c260a878443.ndi.gz' removed from upload directory
+[Tuesday, 3 April 2012 7:21:57 AM (G, 0)] Upload successful
+[Tuesday, 3 April 2012 7:21:57 AM (G, 0)] Uploader finished
+[Tuesday, 3 April 2012 7:21:57 AM (G, 0)] ************************************************************
