@@ -1,0 +1,19 @@
+name: Test
+
+on: push
+
+jobs:
+  build:
+    name: Build and test
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '2.2.x'
+
+    - run: dotnet restore
+    - run: dotnet build
+    - run: dotnet test
