@@ -5,3 +5,4 @@ TestResults/
 bin/
 obj/
 *.decomp.*
+protected-tests/
