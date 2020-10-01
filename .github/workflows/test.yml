@@ -1,0 +1,30 @@
+name: Test
+
+on: push
+
+jobs:
+  build:
+    name: Build and test
+    runs-on: ubuntu-latest
+
+    env:
+      # avoid the package cache expand delay
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '2.2.x'
+
+    - uses: actions/cache@v2
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
+    - run: dotnet restore
+    - run: dotnet build --no-restore
+    - run: dotnet test --no-restore

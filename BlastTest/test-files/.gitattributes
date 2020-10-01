@@ -1,0 +1,2 @@
+# don't normalize CRLF on the test files
+* -text
