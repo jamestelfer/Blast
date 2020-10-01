@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Utils;
 using Xunit;
+using Shouldly;
 
 namespace BlastTests {
 
@@ -16,102 +17,63 @@ namespace BlastTests {
 		[Fact]
 		public void basic_decompression_from_example() {
 			// setup
-			byte[] input = { 0x00, 0x04, 0x82, 0x24, 0x25, 0x8f, 0x80, 0x7f };
-			byte[] expected = Encoding.ASCII.GetBytes("AIAIAIAIAIAIA");
+			byte[] compressedInput = { 0x00, 0x04, 0x82, 0x24, 0x25, 0x8f, 0x80, 0x7f };
+			byte[] expectedResult = Encoding.ASCII.GetBytes("AIAIAIAIAIAIA");
 
-			var outp = new MemoryStream();
+			var actualOutput = new MemoryStream();
 
 			// test
-			var b = new Blast(new MemoryStream(input, writable: false), outp);
-			b.Decompress();
-			Console.WriteLine(Encoding.ASCII.GetString(outp.ToArray()));
+			var sut = new Blast(new MemoryStream(compressedInput, writable: false), actualOutput);
+			sut.Decompress();
+
+            byte[] actualResult = actualOutput.ToArray();
 
 			// assert
-			Assert.Equal(expected, outp.ToArray());
+			actualResult.ShouldBe(expectedResult);
 		}
 
-		[Fact]
-		public void decompress_log_file()
+		[Theory]
+		[InlineData("test.log.blast")]
+		[InlineData("lorem-ipsum.short.txt.blast")]
+		// [InlineData("apache-license.html.blast")]
+		public void decompress_test_files(string compressedSourceFile)
 		{
 			// setup
 			var baseFolder = GetTestFileFolder();
-			string sourceFile = Path.Combine(baseFolder,  "test.log.blast");
-			string outputFile = Path.Combine(baseFolder,  "test.decomp.log");
-			string compareFile = Path.Combine(baseFolder, "test.log");
+			string expectedOutputFile = Path.GetFileNameWithoutExtension(compressedSourceFile);
 
+			string compressedSourceFilePath = Path.Combine(baseFolder, compressedSourceFile);
+			string expectedOutputFilePath = Path.Combine(baseFolder, expectedOutputFile);
+			string actualOutputFilePath = Path.Combine(baseFolder, ".output", expectedOutputFile);
 
-			using (var input = new FileStream(sourceFile, FileMode.Open, FileAccess.Read))
-			using (var output = new FileStream(outputFile, FileMode.Create, FileAccess.Write))
+			Directory.CreateDirectory(Path.GetDirectoryName(actualOutputFilePath));
+
+			using (var input = new FileStream(compressedSourceFilePath, FileMode.Open, FileAccess.Read))
+			using (var output = new FileStream(actualOutputFilePath, FileMode.Create, FileAccess.Write))
 			{
 				// test
 				var b = new Blast(input, output);
 				b.Decompress();
+
+				output.Flush();
 			}
 
 			// assert
-			AssertFile(compareFile, outputFile);
+			AssertFile(expectedOutputFilePath, actualOutputFilePath);
 		}
-
-		[Fact]
-		public void decompress_lorem_ipsum_short_text_file()
-		{
-			// setup
-			var baseFolder = GetTestFileFolder();
-			string sourceFile = Path.Combine(baseFolder,  "lorem-ipsum.short.txt.blast");
-			string outputFile = Path.Combine(baseFolder,  "lorem-ipsum.short.decomp.txt");
-			string compareFile = Path.Combine(baseFolder, "lorem-ipsum.short.txt");
-
-
-			using (var input = new FileStream(sourceFile, FileMode.Open, FileAccess.Read))
-			using (var output = new FileStream(outputFile, FileMode.Create, FileAccess.Write))
-			{
-				// test
-				var b = new Blast(input, output);
-				b.Decompress();
-			}
-
-			// assert
-			AssertFile(compareFile, outputFile);
-		}
-
-		[Fact]
-		public void decompress_license_text_file()
-		{
-			// setup
-			var baseFolder = GetTestFileFolder();
-			string sourceFile = Path.Combine(baseFolder, "apache-license.html.blast");
-			string outputFile = Path.Combine(baseFolder, "apache-license.decomp.html");
-			string compareFile = Path.Combine(baseFolder, "apache-license.html");
-
-
-			using (var input = new FileStream(sourceFile, FileMode.Open, FileAccess.Read))
-			using (var output = new FileStream(outputFile, FileMode.Create, FileAccess.Write))
-			{
-				// test
-				var b = new Blast(input, output);
-				b.Decompress();
-			}
-
-			// assert
-			AssertFile(compareFile, outputFile);
-		}
-
 
 		private void AssertFile(string expectedFileResult, string actualFileResult)
 		{
-			Assert.True(File.Exists(expectedFileResult), "Expected file result must exist");
-			Assert.True(File.Exists(actualFileResult), "Actual file result must exist");
+			File.Exists(expectedFileResult).ShouldBeTrue("Expected file result must exist");
+			File.Exists(actualFileResult).ShouldBeTrue("Actual file result must exist");
 
 			var exp = new FileInfo(expectedFileResult);
 			var act = new FileInfo(actualFileResult);
 
-			Assert.Equal(exp.Length, act.Length);
-
-			using (var expStream = new FileStream(expectedFileResult, FileMode.Open, FileAccess.Read))
-			using (var actStream = new FileStream(actualFileResult, FileMode.Open, FileAccess.Read))
-			{
-				Assert.True(StreamsContentsAreEqual(expStream, actStream), "Files differ");
-			}
+			exp.ShouldSatisfyAllConditions(
+				() => exp.Length.ShouldBe(act.Length),
+				() => File.ReadAllText(actualFileResult).ShouldBe(File.ReadAllText(expectedFileResult))
+			);
 		}
 
 		private static string GetTestFileFolder()
@@ -134,39 +96,6 @@ namespace BlastTests {
 			Assert.True(Directory.Exists(candidate), $"Input file location must exist relative to '{projDir}' or '{Environment.CurrentDirectory}'");
 
 			return candidate;
-		}
-
-		// http://stackoverflow.com/questions/968935/c-sharp-binary-file-compare
-		private static bool StreamsContentsAreEqual(Stream stream1, Stream stream2)
-		{
-			const int bufferSize = 2048 * 2;
-			var buffer1 = new byte[bufferSize];
-			var buffer2 = new byte[bufferSize];
-
-			while (true)
-			{
-				int count1 = stream1.Read(buffer1, 0, bufferSize);
-				int count2 = stream2.Read(buffer2, 0, bufferSize);
-
-				if (count1 != count2)
-				{
-					return false;
-				}
-
-				if (count1 == 0)
-				{
-					return true;
-				}
-
-				int iterations = (int)Math.Ceiling((double)count1 / sizeof(Int64));
-				for (int i = 0; i < iterations; i++)
-				{
-					if (BitConverter.ToInt64(buffer1, i * sizeof(Int64)) != BitConverter.ToInt64(buffer2, i * sizeof(Int64)))
-					{
-						return false;
-					}
-				}
-			}
 		}
 	}
 }

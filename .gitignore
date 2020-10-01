@@ -4,5 +4,5 @@
 TestResults/
 bin/
 obj/
-*.decomp.*
+*/test-files/.output/
 protected-tests/
