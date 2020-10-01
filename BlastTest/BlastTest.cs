@@ -62,6 +62,43 @@ namespace BlastTests {
 			AssertFile(expectedOutputFilePath, actualOutputFilePath);
 		}
 
+		[Theory]
+		[InlineData("blast.msg.cmp")]
+		[InlineData("srv.log.cmp")]
+		[InlineData("large.log.cmp")]
+		// [InlineData("apache-license.html.blast")]
+		public void decompress_protected_test_files(string compressedSourceFile)
+		{
+			// setup
+			var baseFolder = GetTestFileFolder("protected-tests");
+			string expectedOutputFile = Path.GetFileNameWithoutExtension(compressedSourceFile);
+
+			string compressedSourceFilePath = Path.Combine(baseFolder, compressedSourceFile);
+			string expectedOutputFilePath = Path.Combine(baseFolder, expectedOutputFile);
+			string actualOutputFilePath = Path.Combine(baseFolder, ".output", expectedOutputFile);
+
+			// pass the test if the file is not present in the working copy
+			if (!File.Exists(compressedSourceFilePath))
+			{
+				return;
+			}
+
+			Directory.CreateDirectory(Path.GetDirectoryName(actualOutputFilePath));
+
+			using (var input = new FileStream(compressedSourceFilePath, FileMode.Open, FileAccess.Read))
+			using (var output = new FileStream(actualOutputFilePath, FileMode.Create, FileAccess.Write))
+			{
+				// test
+				var b = new Blast(input, output);
+				b.Decompress();
+
+				output.Flush();
+			}
+
+			// assert
+			AssertFile(expectedOutputFilePath, actualOutputFilePath);
+		}
+
 		private void AssertFile(string expectedFileResult, string actualFileResult)
 		{
 			File.Exists(expectedFileResult).ShouldBeTrue("Expected file result must exist");
@@ -76,21 +113,21 @@ namespace BlastTests {
 			);
 		}
 
-		private static string GetTestFileFolder()
+		private static string GetTestFileFolder(string folderName = "test-files")
 		{
 			var projDir = Directory.GetParent(System.Reflection.Assembly.GetExecutingAssembly().Location).Parent.Parent.FullName;
-			var candidate = Path.Combine(projDir, "test-files");
+			var candidate = Path.Combine(projDir, folderName);
 
 			if (!Directory.Exists(candidate))
 			{
 				candidate =
-					Path.Combine(projDir, "../test-files");
+					Path.Combine(projDir, "..", folderName);
 			}
 
 			if (!Directory.Exists(candidate))
 			{
 				candidate =
-					Path.Combine(Environment.CurrentDirectory, "test-files");
+					Path.Combine(Environment.CurrentDirectory, folderName);
 			}
 
 			Assert.True(Directory.Exists(candidate), $"Input file location must exist relative to '{projDir}' or '{Environment.CurrentDirectory}'");
