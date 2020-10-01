@@ -4,4 +4,5 @@
 TestResults/
 bin/
 obj/
-test-files/
+*/test-files/.output/
+protected-tests/
