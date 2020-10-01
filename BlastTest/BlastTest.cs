@@ -10,129 +10,134 @@ using Utils;
 using Xunit;
 using Shouldly;
 
-namespace BlastTests {
+namespace BlastTests
+{
 
-	public class BlastTest {
+    public class BlastTest
+    {
 
-		[Fact]
-		public void basic_decompression_from_example() {
-			// setup
-			byte[] compressedInput = { 0x00, 0x04, 0x82, 0x24, 0x25, 0x8f, 0x80, 0x7f };
-			byte[] expectedResult = Encoding.ASCII.GetBytes("AIAIAIAIAIAIA");
+        [Fact]
+        public void basic_decompression_from_example()
+        {
+            // setup
+            byte[] compressedInput = { 0x00, 0x04, 0x82, 0x24, 0x25, 0x8f, 0x80, 0x7f };
+            byte[] expectedResult = Encoding.ASCII.GetBytes("AIAIAIAIAIAIA");
 
-			var actualOutput = new MemoryStream();
+            var actualOutput = new MemoryStream();
 
-			// test
-			var sut = new Blast(new MemoryStream(compressedInput, writable: false), actualOutput);
-			sut.Decompress();
+            // test
+            var sut = new Blast(new MemoryStream(compressedInput, writable: false), actualOutput);
+            sut.Decompress();
 
             byte[] actualResult = actualOutput.ToArray();
 
-			// assert
-			actualResult.ShouldBe(expectedResult);
-		}
+            // assert
+            actualResult.ShouldBe(expectedResult);
+        }
 
-		[Theory]
-		[InlineData("test.log.blast")]
-		[InlineData("lorem-ipsum.short.txt.blast")]
-		// [InlineData("apache-license.html.blast")]
-		public void decompress_test_files(string compressedSourceFile)
-		{
-			// setup
-			var baseFolder = GetTestFileFolder();
-			string expectedOutputFile = Path.GetFileNameWithoutExtension(compressedSourceFile);
+        [Theory]
+        [InlineData("test.log.blast")]
+        [InlineData("lorem-ipsum.short.txt.blast")]
+        // [InlineData("apache-license.html.blast")]
+        public void decompress_test_files(string compressedSourceFile)
+        {
+            // setup
+            var baseFolder = GetTestFileFolder();
+            string expectedOutputFile = Path.GetFileNameWithoutExtension(compressedSourceFile);
 
-			string compressedSourceFilePath = Path.Combine(baseFolder, compressedSourceFile);
-			string expectedOutputFilePath = Path.Combine(baseFolder, expectedOutputFile);
-			string actualOutputFilePath = Path.Combine(baseFolder, ".output", expectedOutputFile);
+            string compressedSourceFilePath = Path.Combine(baseFolder, compressedSourceFile);
+            string expectedOutputFilePath = Path.Combine(baseFolder, expectedOutputFile);
+            string actualOutputFilePath = Path.Combine(baseFolder, ".output", expectedOutputFile);
 
-			Directory.CreateDirectory(Path.GetDirectoryName(actualOutputFilePath));
+            Directory.CreateDirectory(Path.GetDirectoryName(actualOutputFilePath));
 
-			using (var input = new FileStream(compressedSourceFilePath, FileMode.Open, FileAccess.Read))
-			using (var output = new FileStream(actualOutputFilePath, FileMode.Create, FileAccess.Write))
-			{
-				// test
-				var b = new Blast(input, output);
-				b.Decompress();
+            using (var input = new FileStream(compressedSourceFilePath, FileMode.Open, FileAccess.Read))
+            using (var output = new FileStream(actualOutputFilePath, FileMode.Create, FileAccess.Write))
+            {
+                // test
+                var b = new Blast(input, output);
+                b.Decompress();
 
-				output.Flush();
-			}
+                output.Flush();
+            }
 
-			// assert
-			AssertFile(expectedOutputFilePath, actualOutputFilePath);
-		}
+            // assert
+            AssertFile(expectedOutputFilePath, actualOutputFilePath);
+        }
 
-		[Theory]
-		[InlineData("blast.msg.cmp")]
-		[InlineData("srv.log.cmp")]
-		[InlineData("large.log.cmp")]
-		// [InlineData("apache-license.html.blast")]
-		public void decompress_protected_test_files(string compressedSourceFile)
-		{
-			// setup
-			var baseFolder = GetTestFileFolder("protected-tests");
-			string expectedOutputFile = Path.GetFileNameWithoutExtension(compressedSourceFile);
-
-			string compressedSourceFilePath = Path.Combine(baseFolder, compressedSourceFile);
-			string expectedOutputFilePath = Path.Combine(baseFolder, expectedOutputFile);
-			string actualOutputFilePath = Path.Combine(baseFolder, ".output", expectedOutputFile);
-
-			// pass the test if the file is not present in the working copy
-			if (!File.Exists(compressedSourceFilePath))
+        [Theory]
+        [InlineData("blast.msg.cmp")]
+        [InlineData("srv.log.cmp")]
+        [InlineData("large.log.cmp")]
+        // [InlineData("apache-license.html.blast")]
+        public void decompress_protected_test_files(string compressedSourceFile)
+        {
+            // setup
+            var baseFolder = GetTestFileFolder("protected-tests", required: false);
+			if (!Directory.Exists(baseFolder))
 			{
 				return;
 			}
 
-			Directory.CreateDirectory(Path.GetDirectoryName(actualOutputFilePath));
+            string expectedOutputFile = Path.GetFileNameWithoutExtension(compressedSourceFile);
 
-			using (var input = new FileStream(compressedSourceFilePath, FileMode.Open, FileAccess.Read))
-			using (var output = new FileStream(actualOutputFilePath, FileMode.Create, FileAccess.Write))
-			{
-				// test
-				var b = new Blast(input, output);
-				b.Decompress();
+            string compressedSourceFilePath = Path.Combine(baseFolder, compressedSourceFile);
+            string expectedOutputFilePath = Path.Combine(baseFolder, expectedOutputFile);
+            string actualOutputFilePath = Path.Combine(baseFolder, ".output", expectedOutputFile);
 
-				output.Flush();
-			}
+            Directory.CreateDirectory(Path.GetDirectoryName(actualOutputFilePath));
 
-			// assert
-			AssertFile(expectedOutputFilePath, actualOutputFilePath);
-		}
+            using (var input = new FileStream(compressedSourceFilePath, FileMode.Open, FileAccess.Read))
+            using (var output = new FileStream(actualOutputFilePath, FileMode.Create, FileAccess.Write))
+            {
+                // test
+                var b = new Blast(input, output);
+                b.Decompress();
 
-		private void AssertFile(string expectedFileResult, string actualFileResult)
-		{
-			File.Exists(expectedFileResult).ShouldBeTrue("Expected file result must exist");
-			File.Exists(actualFileResult).ShouldBeTrue("Actual file result must exist");
+                output.Flush();
+            }
 
-			var exp = new FileInfo(expectedFileResult);
-			var act = new FileInfo(actualFileResult);
+            // assert
+            AssertFile(expectedOutputFilePath, actualOutputFilePath);
+        }
 
-			exp.ShouldSatisfyAllConditions(
-				() => exp.Length.ShouldBe(act.Length),
-				() => File.ReadAllText(actualFileResult).ShouldBe(File.ReadAllText(expectedFileResult))
-			);
-		}
+        private void AssertFile(string expectedFileResult, string actualFileResult)
+        {
+            File.Exists(expectedFileResult).ShouldBeTrue("Expected file result must exist");
+            File.Exists(actualFileResult).ShouldBeTrue("Actual file result must exist");
 
-		private static string GetTestFileFolder(string folderName = "test-files")
-		{
-			var projDir = Directory.GetParent(System.Reflection.Assembly.GetExecutingAssembly().Location).Parent.Parent.FullName;
-			var candidate = Path.Combine(projDir, folderName);
+            var exp = new FileInfo(expectedFileResult);
+            var act = new FileInfo(actualFileResult);
 
-			if (!Directory.Exists(candidate))
-			{
-				candidate =
-					Path.Combine(projDir, "..", folderName);
-			}
+            exp.ShouldSatisfyAllConditions(
+                () => exp.Length.ShouldBe(act.Length),
+                () => File.ReadAllText(actualFileResult).ShouldBe(File.ReadAllText(expectedFileResult))
+            );
+        }
 
-			if (!Directory.Exists(candidate))
-			{
-				candidate =
-					Path.Combine(Environment.CurrentDirectory, folderName);
-			}
+        private static string GetTestFileFolder(string folderName = "test-files", bool required = true)
+        {
+            var projDir = Directory.GetParent(System.Reflection.Assembly.GetExecutingAssembly().Location).Parent.Parent.FullName;
+            var candidate = Path.Combine(projDir, folderName);
 
-			Assert.True(Directory.Exists(candidate), $"Input file location must exist relative to '{projDir}' or '{Environment.CurrentDirectory}'");
+            if (!Directory.Exists(candidate))
+            {
+                candidate =
+                    Path.Combine(projDir, "..", folderName);
+            }
 
-			return candidate;
-		}
-	}
+            if (!Directory.Exists(candidate))
+            {
+                candidate =
+                    Path.Combine(Environment.CurrentDirectory, folderName);
+            }
+
+            if (required)
+            {
+                Assert.True(Directory.Exists(candidate), $"Input file location must exist relative to '{projDir}' or '{Environment.CurrentDirectory}'");
+            }
+
+            return candidate;
+        }
+    }
 }
