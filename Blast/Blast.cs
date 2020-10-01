@@ -425,13 +425,13 @@ namespace Utils {
 
 		private void CopyBufferSection(int fromIndex, int copyCount)
 		{
-			EnsureBufferSpace(copyCount);
+			fromIndex -= EnsureBufferSpace(copyCount);
 
 			Buffer.BlockCopy(_outputBuffer, fromIndex, _outputBuffer, _outputBufferPos, copyCount);
 			_outputBufferPos += copyCount;
 		}
 
-		private void EnsureBufferSpace(int required)
+		private int EnsureBufferSpace(int required)
 		{
 			// is there room in the buffer?
 			if (_outputBufferPos + required >= _outputBuffer.Length)
@@ -444,8 +444,12 @@ namespace Utils {
 				// position the stream further back
 				Buffer.BlockCopy(_outputBuffer, startWindowOffset, _outputBuffer, 0, MAX_WIN);
 				_outputBufferPos = MAX_WIN;
-			}
-		}
+
+            return startWindowOffset;
+         }
+
+         return 0;
+      }
 
 		private void FlushOutputBufferSection(int count) 
 		{
