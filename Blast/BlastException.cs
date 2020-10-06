@@ -1,6 +1,6 @@
 using System;
 
-namespace Utils
+namespace Blast
 {
     public class BlastException : Exception
     {

@@ -6,7 +6,7 @@ using System.IO;
 using System.Text;
 using System.Collections.Generic;
 using System.Linq;
-using Utils;
+using Blast;
 using Xunit;
 using Shouldly;
 
@@ -26,7 +26,7 @@ namespace BlastTests
             var actualOutput = new MemoryStream();
 
             // test
-            var sut = new Blast(new MemoryStream(compressedInput, writable: false), actualOutput);
+            var sut = new BlastDecoder(new MemoryStream(compressedInput, writable: false), actualOutput);
             sut.Decompress();
 
             byte[] actualResult = actualOutput.ToArray();
@@ -55,7 +55,7 @@ namespace BlastTests
             using (var output = new FileStream(actualOutputFilePath, FileMode.Create, FileAccess.Write))
             {
                 // test
-                var b = new Blast(input, output);
+                var b = new BlastDecoder(input, output);
                 b.Decompress();
 
                 output.Flush();
@@ -91,7 +91,7 @@ namespace BlastTests
             using (var output = new FileStream(actualOutputFilePath, FileMode.Create, FileAccess.Write))
             {
                 // test
-                var b = new Blast(input, output);
+                var b = new BlastDecoder(input, output);
                 b.Decompress();
 
                 output.Flush();

@@ -29,5 +29,5 @@ me, though, this works faster than shelling out to an executable as the previous
 
 ## Usage
 ```
-new Utils.Blast(sourceStream, destinationStream).Decompress();
+new Blast.BlastDecoder(sourceStream, destinationStream).Decompress();
 ```

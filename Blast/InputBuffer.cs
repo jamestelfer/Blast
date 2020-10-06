@@ -1,6 +1,6 @@
 using System.IO;
 
-namespace Utils
+namespace Blast
 {
     public class InputBuffer
     {
