@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012 James Telfer, released under the Apache 2.0 license:
+// Copyright (c) 2012 James Telfer, released under the Apache 2.0 license:
 // see http://www.apache.org/licenses/LICENSE-2.0.html.
 
 using System;
