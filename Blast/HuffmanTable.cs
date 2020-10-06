@@ -1,4 +1,4 @@
-namespace Utils
+namespace Blast
 {
     /// <summary>
     /// Huffman code decoding tables.  count[1..MAXBITS] is the number of symbols of

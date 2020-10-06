@@ -1,4 +1,4 @@
-namespace Utils
+namespace Blast
 {
     public class BitStream
     {
