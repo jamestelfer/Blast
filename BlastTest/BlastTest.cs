@@ -74,10 +74,10 @@ namespace BlastTests
         {
             // setup
             var baseFolder = GetTestFileFolder("protected-tests", required: false);
-			if (!Directory.Exists(baseFolder))
-			{
-				return;
-			}
+            if (!Directory.Exists(baseFolder))
+            {
+                return;
+            }
 
             string expectedOutputFile = Path.GetFileNameWithoutExtension(compressedSourceFile);
 
