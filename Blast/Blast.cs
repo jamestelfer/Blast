@@ -48,18 +48,7 @@ using System.Text;
 
 namespace Utils
 {
-    public class BlastException : Exception
-    {
-        public const string OutOfInputMessage = "Ran out of input before completing decompression";
-        public const string OutputMessage = "Output error before completing decompression";
-        public const string LiteralFlagMessage = "Literal flag not zero or one";
-        public const string DictionarySizeMessage = "Dictionary size not in 4..6";
-        public const string DistanceMessage = "Distance is too far back";
 
-        public BlastException() : base() { }
-        public BlastException(string message) : base(message) { }
-        public BlastException(string message, Exception inner) : base(message, inner) { }
-    }
 
     public class Blast
     {
@@ -81,13 +70,9 @@ namespace Utils
         //
         // state variables
         //
-        private Stream _inputStream;
-        private byte[] _inputBuffer = new byte[16384];
-        private int _inputBufferPos = 0;
-        private int _inputBufferRemaining = 0; // available input in buffer
+        private readonly InputBuffer _inputBuffer;
+        private readonly BitStream _bitStream;
 
-        private int _bitBuffer = 0; // bit buffer
-        private int _bitBufferCount = 0; // number of bits in bit buffer
 
         private Stream _outputStream;
         private byte[] _outputBuffer = new byte[MAX_WIN * 2]; // output buffer and sliding window
@@ -127,7 +112,9 @@ namespace Utils
         /// </summary>
         public Blast(Stream inputStream, Stream outputStream)
         {
-            this._inputStream = inputStream;
+            this._inputBuffer = new InputBuffer(inputStream);
+            this._bitStream = new BitStream(this._inputBuffer);
+
             this._outputStream = outputStream;
         }
 
@@ -140,7 +127,7 @@ namespace Utils
             {
                 // some files are composed of multiple compressed streams
                 DecompressStream();
-            } while (IsInputRemaining());
+            } while (_inputBuffer.IsInputRemaining());
         }
 
         /// <summary>
@@ -193,13 +180,13 @@ namespace Utils
             int fromIndex;
 
             // read header (start of compressed stream)
-            codedLiteral = GetBits(8);
+            codedLiteral = _bitStream.GetBits(8);
             if (codedLiteral > 1)
             {
                 throw new BlastException(BlastException.LiteralFlagMessage);
             }
 
-            dictSize = GetBits(8);
+            dictSize = _bitStream.GetBits(8);
 
             if (dictSize < 4 || dictSize > 6)
             {
@@ -212,12 +199,12 @@ namespace Utils
                 // decode literals and length/distance pairs
                 do
                 {
-                    if (GetBits(1) > 0)
+                    if (_bitStream.GetBits(1) > 0)
                     { // 0 == literal, 1 == length+distance
 
                         // decode length
                         decodedSymbol = Decode(HuffmanTable.LENGTH_CODE);
-                        copyLength = LENGTH_CODE_BASE[decodedSymbol] + GetBits(LENGTH_CODE_EXTRA[decodedSymbol]);
+                        copyLength = LENGTH_CODE_BASE[decodedSymbol] + _bitStream.GetBits(LENGTH_CODE_EXTRA[decodedSymbol]);
 
                         if (copyLength == END_OF_STREAM) // sentinel value
                         {
@@ -229,7 +216,7 @@ namespace Utils
                         // decode distance
                         decodedSymbol = copyLength == 2 ? 2 : dictSize;
                         copyDist = Decode(HuffmanTable.DISTANCE_CODE) << decodedSymbol;
-                        copyDist += GetBits(decodedSymbol);
+                        copyDist += _bitStream.GetBits(decodedSymbol);
                         copyDist++;
 
                         // malformed input - you can't go back that far
@@ -261,7 +248,7 @@ namespace Utils
                     else
                     {
                         // get literal and write it
-                        decodedSymbol = codedLiteral != 0 ? Decode(HuffmanTable.LITERAL_CODE) : GetBits(8);
+                        decodedSymbol = codedLiteral != 0 ? Decode(HuffmanTable.LITERAL_CODE) : _bitStream.GetBits(8);
                         WriteBuffer((byte)decodedSymbol);
                     }
                 } while (true);
@@ -270,7 +257,7 @@ namespace Utils
             {
                 // write remaining bytes
                 FlushOutputBuffer();
-                FlushBits();
+                _bitStream.FlushBits();
             }
         }
 
@@ -310,8 +297,9 @@ namespace Utils
             int left;          // bits left in next or left to process
             int next = 1;          // next number of codes
 
-            bitbuf = _bitBuffer;
-            left = _bitBufferCount;
+            var bufferState = _bitStream.State;
+
+            (bitbuf, left) = bufferState;
 
             while (true)
             {
@@ -322,99 +310,34 @@ namespace Utils
                     count = h.count[next++];
                     if (code < first + count)
                     {
-                        _bitBuffer = bitbuf;
-                        _bitBufferCount = (_bitBufferCount - len) & 7;
+                        // code found, reset buffer state after local modification
+                        _bitStream.State = (bitbuf, ((bufferState.bufferCount - len) & 7));
 
                         return h.symbol[index + (code - first)];
                     }
+
                     index += count;
                     first += count;
+
                     first <<= 1;
                     code <<= 1;
+
                     len++;
                 }
+
                 left = (MAX_BITS + 1) - len;
 
                 if (left == 0)
                     break;
 
-                bitbuf = ConsumeByte();
+                bitbuf = _inputBuffer.ConsumeByte();
+
                 if (left > 8)
                     left = 8;
             }
 
-            return -9;
+            return -9; // invalid code
         }
-
-        #region Input stream
-
-        private int GetBits(int need)
-        {
-            int val = _bitBuffer;
-
-            while (_bitBufferCount < need)
-            {
-                val |= ((int)ConsumeByte()) << _bitBufferCount;
-                _bitBufferCount += 8;
-            }
-
-            _bitBuffer = val >> need;
-            _bitBufferCount -= need;
-
-            return val & ((1 << need) - 1);
-        }
-
-        private void FlushBits()
-        {
-            _bitBufferCount = 0;
-        }
-
-        private byte ConsumeByte()
-        {
-            if (_inputBufferRemaining == 0)
-            {
-                DoReadBuffer();
-
-                if (_inputBufferRemaining == 0)
-                {
-                    throw new BlastException(BlastException.OutOfInputMessage);
-                }
-            }
-
-            byte b = _inputBuffer[_inputBufferPos++];
-            _inputBufferRemaining--;
-
-            return b;
-        }
-
-        private void DoReadBuffer()
-        {
-            _inputBufferRemaining = _inputStream.Read(_inputBuffer, 0, _inputBuffer.Length);
-            _inputBufferPos = 0;
-        }
-
-        /// <summary>
-        /// Check for presence of more input without consuming it.
-        /// May refill the input buffer.
-        /// </summary>
-        /// <returns></returns>
-        private bool IsInputRemaining()
-        {
-            // is there any input in the buffer?
-            if (_inputBufferRemaining > 0)
-            {
-                return true;
-            }
-
-            // try to fill it if not
-            DoReadBuffer();
-
-            // true if input now available
-            return _inputBufferRemaining > 0;
-        }
-
-
-        #endregion
 
         #region Output stream
 
