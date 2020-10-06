@@ -1,0 +1,14 @@
+root = true
+
+[*.cs]
+# http://kent-boogaart.com/blog/editorconfig-reference-for-c-developers#indent_size
+indent_size = 4
+
+# http://kent-boogaart.com/blog/editorconfig-reference-for-c-developers#indent_style
+indent_style = space
+
+# http://kent-boogaart.com/blog/editorconfig-reference-for-c-developers#insert_final_newline
+insert_final_newline = true
+
+# http://kent-boogaart.com/blog/editorconfig-reference-for-c-developers#tab_width
+tab_width = 4
