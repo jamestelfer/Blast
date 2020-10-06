@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012 James Telfer, released under the Apache 2.0 license:
+// Copyright (c) 2012 James Telfer, released under the Apache 2.0 license:
 // see http://www.apache.org/licenses/LICENSE-2.0.html.
 
 using System;
@@ -74,10 +74,10 @@ namespace BlastTests
         {
             // setup
             var baseFolder = GetTestFileFolder("protected-tests", required: false);
-			if (!Directory.Exists(baseFolder))
-			{
-				return;
-			}
+            if (!Directory.Exists(baseFolder))
+            {
+                return;
+            }
 
             string expectedOutputFile = Path.GetFileNameWithoutExtension(compressedSourceFile);
 
