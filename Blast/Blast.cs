@@ -116,9 +116,9 @@ namespace Blast
         }
 
         /// <summary>
-		/// Decode PKWare Compression Library stream.
-		/// </summary>
-		public void Decompress()
+        /// Decode PKWare Compression Library stream.
+        /// </summary>
+        public void Decompress()
         {
             do
             {
