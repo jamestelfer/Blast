@@ -9,7 +9,13 @@ Mark Adler wrote a C implementation in 2003.
 This project is a translation into C# of the PKWare compression algorithm 
 implemented in C by [Mark Adler](https://github.com/madler/). 
 
-This implementation varies from the C original. 
+This implementation varies from the C original (see below).
+
+## Compression format
+
+Notes on the Blast/implode format taken from the original code are
+collated [in this repository](docs/format.md). Code comments may
+also help understanding the format. 
 
 ## Variations
 

@@ -127,44 +127,6 @@ namespace Blast
             } while (_inputBuffer.IsInputRemaining());
         }
 
-        /// <summary>
-        /// Decode PKWare Compression Library stream.
-        ///
-        /// Format notes:
-        ///
-        /// - First byte is 0 if literals are uncoded or 1 if they are coded.  Second
-        ///   byte is 4, 5, or 6 for the number of extra bits in the distance code.
-        ///   This is the base-2 logarithm of the dictionary size minus six.
-        ///
-        /// - Compressed data is a combination of literals and length/distance pairs
-        ///   terminated by an end code.  Literals are either Huffman coded or
-        ///   uncoded bytes.  A length/distance pair is a coded length followed by a
-        ///   coded distance to represent a string that occurs earlier in the
-        ///   uncompressed data that occurs again at the current location.
-        ///
-        /// - A bit preceding a literal or length/distance pair indicates which comes
-        ///   next, 0 for literals, 1 for length/distance.
-        ///
-        /// - If literals are uncoded, then the next eight bits are the literal, in the
-        ///   normal bit order in th stream, i.e. no bit-reversal is needed. Similarly,
-        ///   no bit reversal is needed for either the length extra bits or the distance
-        ///   extra bits.
-        ///
-        /// - Literal bytes are simply written to the output.  A length/distance pair is
-        ///   an instruction to copy previously uncompressed bytes to the output.  The
-        ///   copy is from distance bytes back in the output stream, copying for length
-        ///   bytes.
-        ///
-        /// - Distances pointing before the beginning of the output data are not
-        ///   permitted.
-        ///
-        /// - Overlapped copies, where the length is greater than the distance, are
-        ///   allowed and common.  For example, a distance of one and a length of 518
-        ///   simply copies the last byte 518 times.  A distance of four and a length of
-        ///   twelve copies the last four bytes three times.  A simple forward copy
-        ///   ignoring whether the length is greater than the distance or not implements
-        ///   this correctly.
-        /// </summary>
         private void DecompressStream()
         {
             int codedLiteral; // true if literals are coded
@@ -260,7 +222,7 @@ namespace Blast
 
         /// <summary>
         /// <para>
-        /// Decode a code from the stream using huffman table h.  Return the symbol or
+        /// Decode a code from the stream using huffman table <c>h</c>.  Return the symbol or
         /// a negative value if there is an error.  If all of the lengths are zero, i.e.
         /// an empty code, or if the code is incomplete and an invalid code is received,
         /// then -9 is returned after reading MAXBITS bits.
@@ -285,14 +247,14 @@ namespace Blast
         /// </summary>
         private int Decode(HuffmanTable h)
         {
-            int len = 1;            // current number of bits in code
-            int code = 0;          // len bits being decoded
-            int first = 0;        // first code of length len
-            int count;        // number of codes of length len
-            int index = 0;        // index of first code of length len in symbol table
-            int bitbuf;      // bits from stream
-            int left;          // bits left in next or left to process
-            int next = 1;          // next number of codes
+            int len = 1;   // current number of bits in code
+            int code = 0;  // len bits being decoded
+            int first = 0; // first code of length len
+            int count;     // number of codes of length len
+            int index = 0; // index of first code of length len in symbol table
+            int bitbuf;    // bits from stream
+            int left;      // bits left in next or left to process
+            int next = 1;  // next number of codes
 
             var bufferState = _bitStream.State;
 
@@ -302,14 +264,22 @@ namespace Blast
             {
                 while (left-- > 0)
                 {
+                    // add the next bit from the stream to the code
+                    // this bit is inverted as mentioned above
                     code |= (bitbuf & 1) ^ 1;
+
+                    // advance the buffer
                     bitbuf >>= 1;
+
+                    // grab the count out of the Huffman table
                     count = h.count[next++];
+
                     if (code < first + count)
                     {
-                        // code found, reset buffer state after local modification
+                        // code found, reset bitstream state after local modification
                         _bitStream.State = (bitbuf, ((bufferState.bufferCount - len) & 7));
 
+                        // return decoded symbol
                         return h.symbol[index + (code - first)];
                     }
 
@@ -322,13 +292,20 @@ namespace Blast
                     len++;
                 }
 
+                // the code uses bits from the next byte in the stream
+                // work out how many this may be based on the current
+                // number of bits consumed by the current code
                 left = (HuffmanTable.MAX_BITS + 1) - len;
 
+                // all bits of the code have been consumed
                 if (left == 0)
                     break;
 
+                // get the next byte from the input stream to continue processing the current code
                 bitbuf = _inputBuffer.ConsumeByte();
 
+                // max number of bits to be processed in the
+                // current code per iteration is limited to one byte/eight bits
                 if (left > 8)
                     left = 8;
             }
