@@ -225,7 +225,7 @@ namespace Blast
         /// Decode a code from the stream using huffman table <c>h</c>.  Return the symbol or
         /// a negative value if there is an error.  If all of the lengths are zero, i.e.
         /// an empty code, or if the code is incomplete and an invalid code is received,
-        /// then -9 is returned after reading MAXBITS bits.
+        /// an exception is thrown after reading MAXBITS bits.
         /// </para>
         ///
         /// <para>Format notes:</para>
@@ -310,7 +310,7 @@ namespace Blast
                     left = 8;
             }
 
-            return -9; // invalid code
+            throw new BlastException(BlastException.InvalidCode);
         }
 
         #region Output stream

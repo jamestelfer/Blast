@@ -9,6 +9,7 @@ namespace Blast
         public const string LiteralFlagMessage = "Literal flag not zero or one";
         public const string DictionarySizeMessage = "Dictionary size not in 4..6";
         public const string DistanceMessage = "Distance is too far back";
+        public const string InvalidCode = "Stream contained an invalid code; cannot decompress";
 
         public BlastException() : base() { }
         public BlastException(string message) : base(message) { }
