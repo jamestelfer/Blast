@@ -52,6 +52,7 @@ namespace Blast
     {
         public const int MAX_WIN = 4096;
         private const int END_OF_STREAM = 519;
+        private const int LITERAL_INDICATOR = 0;
 
         /// <summary>
         /// base for length codes
@@ -129,23 +130,12 @@ namespace Blast
 
         private void DecompressStream()
         {
-            int codedLiteral; // true if literals are coded
-            int dictSize;          // log2(dictionary size) - 6
-            int decodedSymbol;       // decoded symbol, extra bits for distance
-            int copyLength;         // length for copy
-            int copyDist;          // distance for copy
-            int copyCount;         // copy counter
-
-            int fromIndex;
-
             // read header (start of compressed stream)
-            codedLiteral = _bitStream.GetBits(8);
-            if (codedLiteral > 1)
-            {
-                throw new BlastException(BlastException.LiteralFlagMessage);
-            }
+            bool codedLiteral = ReadCodedLiteralHeader();
+            var readLiteral = codedLiteral ? (Func<byte>)ReadCodedLiteral : ReadUncodedLiteral;
 
-            dictSize = _bitStream.GetBits(8);
+            // log2(dictionary size) - 6
+            int dictSize = _bitStream.GetBits(8);
 
             if (dictSize < 4 || dictSize > 6)
             {
@@ -158,57 +148,25 @@ namespace Blast
                 // decode literals and length/distance pairs
                 do
                 {
-                    if (_bitStream.GetBits(1) > 0)
-                    { // 0 == literal, 1 == length+distance
+                    // Bit indicates whether to read literal from stream or encoded length+distance pair
+                    int nextCodeIndicator = _bitStream.GetBits(1);
 
-                        // decode length
-                        decodedSymbol = Decode(HuffmanTable.LENGTH_CODE);
-                        copyLength = LENGTH_CODE_BASE[decodedSymbol] + _bitStream.GetBits(LENGTH_CODE_EXTRA[decodedSymbol]);
-
-                        if (copyLength == END_OF_STREAM) // sentinel value
-                        {
-                            // no more for this stream,
-                            // stop and flush
-                            break;
-                        }
-
-                        // decode distance
-                        decodedSymbol = copyLength == 2 ? 2 : dictSize;
-                        copyDist = Decode(HuffmanTable.DISTANCE_CODE) << decodedSymbol;
-                        copyDist += _bitStream.GetBits(decodedSymbol);
-                        copyDist++;
-
-                        // malformed input - you can't go back that far
-                        if (copyDist > _outputBufferPos)
-                        {
-                            throw new BlastException(BlastException.DistanceMessage);
-                        }
-
-                        // Copy copyLength bytes from copyDist bytes back.
-                        // If copyLength is greater than copyDist, repeatedly
-                        // copy copyDist bytes up to a count of copyLength.
-                        do
-                        {
-                            fromIndex = _outputBufferPos - copyDist;
-
-                            copyCount = copyDist;
-
-                            if (copyCount > copyLength)
-                            {
-                                copyCount = copyLength;
-                            }
-
-                            CopyBufferSection(fromIndex, copyCount);
-
-                            copyLength -= copyCount;
-
-                        } while (copyLength != 0);
+                    if (nextCodeIndicator == LITERAL_INDICATOR)
+                    {
+                        // get literal and write it
+                        WriteBuffer(readLiteral());
                     }
                     else
                     {
-                        // get literal and write it
-                        decodedSymbol = codedLiteral != 0 ? Decode(HuffmanTable.LITERAL_CODE) : _bitStream.GetBits(8);
-                        WriteBuffer((byte)decodedSymbol);
+                        // get length/distance and write buffer segments from current window
+                        var (length, distance) = ReadLengthDistance(dictSize);
+
+                        if (length == END_OF_STREAM)
+                        {
+                            break;
+                        }
+
+                        WriteWindowSegment(length, distance);
                     }
                 } while (true);
             }
@@ -218,6 +176,76 @@ namespace Blast
                 FlushOutputBuffer();
                 _bitStream.FlushBits();
             }
+        }
+
+        private byte ReadUncodedLiteral()
+        {
+            return (byte)_bitStream.GetBits(8);
+        }
+        private byte ReadCodedLiteral()
+        {
+            return (byte)Decode(HuffmanTable.LITERAL_CODE);
+        }
+
+        private bool ReadCodedLiteralHeader()
+        {
+            int codedLiteral = _bitStream.GetBits(8);
+            if (codedLiteral > 1)
+            {
+                throw new BlastException(BlastException.LiteralFlagMessage);
+            }
+
+            return codedLiteral == 1;
+        }
+
+        private (int length, int distance) ReadLengthDistance(int dictSize)
+        {
+            // decode length
+            int decodedLengthSymbol = Decode(HuffmanTable.LENGTH_CODE);
+            int copyLength = LENGTH_CODE_BASE[decodedLengthSymbol] + _bitStream.GetBits(LENGTH_CODE_EXTRA[decodedLengthSymbol]);
+
+            if (copyLength == END_OF_STREAM) // sentinel value
+            {
+                // no more for this stream,
+                // stop and flush
+                return (copyLength, 0);
+            }
+
+            // decode distance
+            int distanceAdditionalBits = copyLength == 2 ? 2 : dictSize;
+            int copyDist = Decode(HuffmanTable.DISTANCE_CODE) << distanceAdditionalBits;
+            copyDist += _bitStream.GetBits(distanceAdditionalBits);
+            copyDist++;
+
+            // malformed input - you can't go back that far
+            if (copyDist > _outputBufferPos)
+            {
+                throw new BlastException(BlastException.DistanceMessage);
+            }
+
+            return (copyLength, copyDist);
+        }
+
+        private void WriteWindowSegment(int copyLength, int copyDistance)
+        {
+            // Copy copyLength bytes from copyDist bytes back.
+            // If copyLength is greater than copyDist, repeatedly
+            // copy copyDist bytes up to a count of copyLength.
+            do
+            {
+                int fromIndex = _outputBufferPos - copyDistance;
+                int copyCount = copyDistance;
+
+                if (copyCount > copyLength)
+                {
+                    copyCount = copyLength;
+                }
+
+                CopyBufferSection(fromIndex, copyCount);
+
+                copyLength -= copyCount;
+
+            } while (copyLength != 0);
         }
 
         /// <summary>
